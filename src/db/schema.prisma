@@ -1,0 +1,32 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Room {
+  id            String   @id @default(cuid())
+  code          String   @unique
+  hostId        String
+  players       Player[]
+  host          Player   @relation(fields: [hostId], references: [id])
+  status        String
+  calledNumbers Int[]
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model Player {
+  id            String   @id @default(cuid())
+  nickname      String
+  isHost        Boolean
+  markedNumbers Int[]
+  roomId        String
+  room          Room     @relation(fields: [roomId], references: [id])
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
