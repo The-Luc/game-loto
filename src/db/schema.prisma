@@ -8,22 +8,29 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum RoomStatus {
+  waiting
+  selecting
+  playing
+  ended
+}
+
 model Room {
-  id            String   @id @default(cuid())
-  code          String   @unique
+  id            String     @id @default(cuid())
+  code          String     @unique
   hostId        String
   players       Player[]
-  host          Player   @relation(fields: [hostId], references: [id])
-  status        String
+  status        RoomStatus
   calledNumbers Int[]
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
 }
 
 model Player {
   id            String   @id @default(cuid())
   nickname      String
-  isHost        Boolean
+  isHost        Boolean  @default(false)
+  cardId        String
   markedNumbers Int[]
   roomId        String
   room          Room     @relation(fields: [roomId], references: [id])

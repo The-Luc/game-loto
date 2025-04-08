@@ -51,10 +51,12 @@ export function generateLoToCard(): LoToCard {
 /**
  * Generates multiple random Lô Tô cards
  */
+import { getRandomCardTemplate } from './card-template';
+
 export function generateMultipleCards(count: number): LoToCard[] {
   const cards: LoToCard[] = [];
   for (let i = 0; i < count; i++) {
-    cards.push(generateLoToCard());
+    cards.push(getRandomCardTemplate());
   }
   return cards;
 }

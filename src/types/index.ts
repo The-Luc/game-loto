@@ -1,21 +1,5 @@
-export interface Player {
-  id: string;
-  nickname: string;
-  isHost: boolean;
-  selectedCard?: LoToCard;
-  markedNumbers?: number[];
-}
+import { Player, Room } from '@prisma/client';
 
-export interface Room {
-  id: string;
-  code: string;
-  hostId: string;
-  players: Player[];
-  status: 'waiting' | 'selecting' | 'playing' | 'ended';
-  calledNumbers?: number[];
-  currentNumber?: number;
-  createdAt: string;
-}
 
 export interface LoToCard {
   id: string;
@@ -25,5 +9,10 @@ export interface LoToCard {
 export interface GameState {
   room?: Room;
   player?: Player;
-  availableCards?: LoToCard[];
+  otherPlayers?: Player[];
 }
+
+export type ErrorResponse = {
+  success: boolean;
+  error?: string;
+};

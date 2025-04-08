@@ -2,19 +2,20 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { supabase } from '@/lib/supabase';
-import { GameState, Player, Room, LoToCard } from '@/types';
-import { generateRoomCode, generateMultipleCards } from '@/lib/game-utils';
+import { GameState, LoToCard } from '@/types';
+import { createRoomAction, joinRoomAction, leaveRoomAction } from '../actions/room';
+import { Room, RoomStatus } from '@prisma/client';
 
 interface GameContextType {
   gameState: GameState;
   nickname: string;
   setNickname: (name: string) => void;
   createRoom: () => Promise<string>;
-  joinRoom: (code: string) => Promise<boolean>;
+  joinRoom: (code: string, nickname: string) => Promise<boolean>;
   leaveRoom: () => void;
   startGame: () => void;
   kickPlayer: (playerId: string) => void;
-  selectCard: (card: LoToCard) => void;
+  selectCard: (cardId: string) => void;
   markNumber: (number: number) => void;
   callNextNumber: () => void;
   toggleAutoCall: () => void;
@@ -59,101 +60,63 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
   // Create a new room
   const createRoom = async (): Promise<string> => {
-    const roomCode = generateRoomCode();
-    const playerId = Math.random().toString(36).substring(2, 15);
+    try {
+      // create room and player
+      const { success, room, player } = await createRoomAction(nickname);
+      if (!success) {
+        return '';
+      }
 
-    const newPlayer: Player = {
-      id: playerId,
-      nickname,
-      isHost: true,
-      markedNumbers: [],
-    };
+      // In a real implementation, we would save this to Supabase
+      // For now, we'll just update our local state
+      setGameState({
+        room: room,
+        player: player,
+      });
 
-    const newRoom: Room = {
-      id: Math.random().toString(36).substring(2, 15),
-      code: roomCode,
-      hostId: playerId,
-      players: [newPlayer],
-      status: 'waiting',
-      calledNumbers: [],
-      createdAt: new Date().toISOString(),
-    };
-
-    // In a real implementation, we woul save this to Supabase
-    // For now, we'll just update our local state
-    setGameState({
-      room: newRoom,
-      player: newPlayer,
-    });
-
-    return roomCode;
+      return room?.code || '';
+    } catch (error) {
+      console.error('Failed to create room:', error);
+      return '';
+    }
   };
 
   // Join an existing room
-  const joinRoom = async (code: string): Promise<boolean> => {
-    // In a real implementation, we would fetch the room from Supabase
-    // For now, we'll simulate this
+  const joinRoom = async (code: string, nickname: string): Promise<boolean> => {
+    const { success, room, player } = await joinRoomAction(code, nickname);
 
-    // Simulate room lookup
-    if (gameState.room?.code === code) {
-      // Room exists in our state (for demo purposes)
-      const playerId = Math.random().toString(36).substring(2, 15);
+    if (!success) return false;
 
-      const newPlayer: Player = {
-        id: playerId,
-        nickname,
-        isHost: false,
-        markedNumbers: [],
-      };
+    setGameState({
+      room,
+      player,
+    });
 
-      const updatedRoom = {
-        ...gameState.room,
-        players: [...gameState.room.players, newPlayer],
-      };
+    // Broadcast room update to other players
+    // In a real implementation, this would happen through Supabase Realtime
 
-      setGameState({
-        room: updatedRoom,
-        player: newPlayer,
-      });
-
-      // Broadcast room update to other players
-      // In a real implementation, this would happen through Supabase Realtime
-
-      return true;
-    }
-
-    // Room not found
-    return false;
+    return true;
   };
 
   // Leave the current room
-  const leaveRoom = () => {
+  const leaveRoom = async () => {
     if (!gameState.room || !gameState.player) return;
+    const roomId = gameState.room.id;
+    const playerId = gameState.player.id;
 
-    const updatedPlayers = gameState.room.players.filter(
-      player => player.id !== gameState.player?.id
-    );
+    const { success } = await leaveRoomAction(roomId, playerId);
 
-    // If there are still players in the room
-    if (updatedPlayers.length > 0) {
-      // If the leaving player was the host, assign a new host
-      let updatedRoom = { ...gameState.room, players: updatedPlayers };
+    if (!success) return;
 
-      if (gameState.player.isHost && updatedPlayers.length > 0) {
-        updatedRoom = {
-          ...updatedRoom,
-          hostId: updatedPlayers[0].id,
-          players: updatedPlayers.map((p, index) =>
-            index === 0 ? { ...p, isHost: true } : p
-          ),
-        };
-      }
+    // const updatedPlayers = gameState.room?.players?.filter(
+    //   player => player.id !== gameState.player?.id
+    // );
 
-      // Broadcast room update to other players
-      // In a real implementation, this would happen through Supabase Realtime
-    } else {
-      // If no players left, the room would be deleted in a real implementation
-    }
+    // if (updatedPlayers?.length > 0) {
+    // Update room with remaining players
+
+    // Broadcast room update to other players
+    // In a real implementation, this would happen through Supabase Realtime
 
     // Clear local state
     setGameState({});
@@ -163,18 +126,14 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const startGame = () => {
     if (!gameState.room || !gameState.player?.isHost) return;
 
-    // Generate 10 random cards for each player to choose from
-    const cards = generateMultipleCards(10);
-
-    const updatedRoom: Room = {
+    const updatedRoom = {
       ...gameState.room,
-      status: 'selecting',
+      status: RoomStatus.selecting,
     };
 
     setGameState({
       ...gameState,
       room: updatedRoom,
-      availableCards: cards,
     });
 
     // Broadcast room update to other players
@@ -186,52 +145,37 @@ export function GameProvider({ children }: { children: ReactNode }) {
     if (!gameState.room || !gameState.player?.isHost) return;
     if (playerId === gameState.player.id) return; // Can't kick yourself
 
-    const updatedPlayers = gameState.room.players.filter(
-      player => player.id !== playerId
-    );
+    // const updatedPlayers = gameState.room.players.filter(
+    //   player => player.id !== playerId
+    // );
 
-    const updatedRoom = {
-      ...gameState.room,
-      players: updatedPlayers,
-    };
+    // const updatedRoom = {
+    //   ...gameState.room,
+    //   players: updatedPlayers,
+    // };
 
-    setGameState({
-      ...gameState,
-      room: updatedRoom,
-    });
+    // setGameState({
+    //   ...gameState,
+    //   room: updatedRoom,
+    // });
 
     // Broadcast room update to other players
     // In a real implementation, this would happen through Supabase Realtime
   };
 
   // Select a card during the selection phase
-  const selectCard = (card: LoToCard) => {
+  const selectCard = (cardId: string) => {
     if (!gameState.room || !gameState.player) return;
-    if (gameState.room.status !== 'selecting') return;
+    if (gameState.room.status !== RoomStatus.selecting) return;
 
     const updatedPlayer = {
       ...gameState.player,
-      selectedCard: card,
-    };
-
-    const updatedPlayers = gameState.room.players.map(player =>
-      player.id === gameState.player?.id ? updatedPlayer : player
-    );
-
-    // Check if all players have selected a card
-    const allSelected = updatedPlayers.every(player => player.selectedCard);
-
-    const updatedRoom: Room = {
-      ...gameState.room,
-      players: updatedPlayers,
-      status: allSelected ? 'playing' : 'selecting',
+      cardId,
     };
 
     setGameState({
       ...gameState,
-      room: updatedRoom,
       player: updatedPlayer,
-      availableCards: undefined, // Clear available cards after selection
     });
 
     // Broadcast room update to other players
@@ -241,7 +185,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
   // Mark a number on player's card
   const markNumber = (number: number) => {
     if (!gameState.room || !gameState.player) return;
-    if (gameState.room.status !== 'playing') return;
+    if (gameState.room.status !== RoomStatus.playing) return;
 
     const markedNumbers = [...(gameState.player.markedNumbers || []), number];
 
@@ -250,18 +194,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
       markedNumbers,
     };
 
-    const updatedPlayers = gameState.room.players.map(player =>
-      player.id === gameState.player?.id ? updatedPlayer : player
-    );
-
-    const updatedRoom = {
-      ...gameState.room,
-      players: updatedPlayers,
-    };
-
     setGameState({
       ...gameState,
-      room: updatedRoom,
       player: updatedPlayer,
     });
 
@@ -272,7 +206,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
   // Call the next number (host only)
   const callNextNumber = () => {
     if (!gameState.room || !gameState.player?.isHost) return;
-    if (gameState.room.status !== 'playing') return;
+    if (gameState.room.status !== RoomStatus.playing) return;
 
     // Get all numbers that haven't been called yet (1-90)
     const calledNumbers = gameState.room.calledNumbers || [];

@@ -1,25 +1,32 @@
-"use client";
+'use client';
 
 import { useState } from 'react';
-import { LoToCard as LoToCardType } from '@/types';
 import { useGame } from '@/context/GameContext';
+import { cardTemplates } from '../lib/card-template';
 
 interface LoToCardProps {
-  card: LoToCardType;
+  cardId: string;
   selectable?: boolean;
   playable?: boolean;
 }
 
-export function LoToCard({ card, selectable = false, playable = false }: LoToCardProps) {
+export function LoToCard({
+  cardId,
+  selectable = false,
+  playable = false,
+}: LoToCardProps) {
   const { gameState, selectCard, markNumber } = useGame();
   const [selectedNumbers, setSelectedNumbers] = useState<number[]>([]);
-  
+
+  const card = cardTemplates.find(card => card.id === cardId);
+
   const handleCellClick = (number: number | null) => {
     if (!number) return; // Can't mark empty cells
-    
+
     if (selectable) {
       // In selection mode, clicking selects the entire card
-      selectCard(card);
+      if (!card) return;
+      selectCard(cardId);
     } else if (playable) {
       // In play mode, clicking marks individual numbers
       if (!selectedNumbers.includes(number)) {
@@ -28,32 +35,44 @@ export function LoToCard({ card, selectable = false, playable = false }: LoToCar
       }
     }
   };
-  
+
   // Check if a number has been called in the game
   const isNumberCalled = (number: number | null) => {
     if (!number || !gameState.room?.calledNumbers) return false;
     return gameState.room.calledNumbers.includes(number);
   };
-  
+
   return (
-    <div className={`border-2 rounded-lg p-2 ${selectable ? 'cursor-pointer hover:border-blue-500' : ''}`}>
+    <div
+      className={`border-2 rounded-lg p-2 ${
+        selectable ? 'cursor-pointer hover:border-blue-500' : ''
+      }`}
+    >
       <div className="grid grid-cols-8 gap-1">
-        {card.grid.map((row, rowIndex) => (
+        {card?.grid.map((row, rowIndex) =>
           row.map((cell, colIndex) => (
-            <div 
+            <div
               key={`${rowIndex}-${colIndex}`}
               onClick={() => handleCellClick(cell)}
               className={`
                 aspect-square flex items-center justify-center text-lg font-bold rounded
                 ${!cell ? 'bg-gray-200' : 'bg-white border'}
-                ${playable && cell && isNumberCalled(cell) ? 'cursor-pointer hover:bg-blue-100' : ''}
-                ${playable && selectedNumbers.includes(cell || 0) ? 'bg-green-200 border-green-500' : ''}
+                ${
+                  playable && cell && isNumberCalled(cell)
+                    ? 'cursor-pointer hover:bg-blue-100'
+                    : ''
+                }
+                ${
+                  playable && selectedNumbers.includes(cell || 0)
+                    ? 'bg-green-200 border-green-500'
+                    : ''
+                }
               `}
             >
               {cell || ''}
             </div>
           ))
-        ))}
+        )}
       </div>
     </div>
   );
