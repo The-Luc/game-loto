@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useGame } from '@/context/GameContext';
 import { cardTemplates } from '../lib/card-template';
+import { VictoryScreen } from './VictoryScreen';
 
 interface LoToCardProps {
   cardId: string;
@@ -19,7 +20,7 @@ export function LoToCard({
   const [selectedNumbers, setSelectedNumbers] = useState<number[]>([]);
   const [cardSet, setCardSet] = useState<Set<number>[]>([]);
   const [hasWon, setHasWon] = useState<boolean>(false);
-  console.log('🚀 ~ selectedNumbers:', selectedNumbers);
+  const [showVictoryScreen, setShowVictoryScreen] = useState<boolean>(false);
 
   const card = cardTemplates.find(card => card.id === cardId);
   const player = gameState.player;
@@ -54,6 +55,7 @@ export function LoToCard({
         if (hasWon) {
           // player has won
           setHasWon(true);
+          setShowVictoryScreen(true);
         }
       }
     }
@@ -76,59 +78,64 @@ export function LoToCard({
   };
 
   return (
-    <div
-      className={`border-2 rounded-lg p-2 relative ${
-        selectable ? 'cursor-pointer hover:border-blue-500' : ''
-      } ${currPlayerCardId === cardId && selectable ? 'border-blue-500' : ''}`}
-    >
-      <div className="flex flex-col">
-        {/* Group rows in sets of 3 */}
-        {[0, 1, 2].map(groupIndex => (
-          <div
-            key={`group-${groupIndex}`}
-            className={`grid grid-cols-8 gap-1 ${groupIndex < 2 ? 'mb-4' : ''}`}
-          >
-            {card?.grid
-              .slice(groupIndex * 3, groupIndex * 3 + 3)
-              .map((row, rowIndexInGroup) =>
-                row.map((cell, colIndex) => {
-                  const rowIndex = groupIndex * 3 + rowIndexInGroup;
-                  return (
-                    <div
-                      key={`${rowIndex}-${colIndex}`}
-                      onClick={() => handleCellClick(cell)}
-                      style={{
-                        backgroundColor: cell ? '#E5E7EB' : card?.backgroundColor,
-                      }}
-                      className={`
-                      aspect-3/3 flex items-center justify-center sm:text-lg md:text-sm lg:text-lg font-bold border-2
+    <>
+      {showVictoryScreen && (
+        <VictoryScreen winner="You" onCloseAction={() => setShowVictoryScreen(false)} />
+      )}
+      <div
+        className={`border-2 rounded-lg p-2 relative bg-black/80 ${
+          selectable ? 'cursor-pointer hover:border-blue-500' : ''
+        } ${currPlayerCardId === cardId && selectable ? 'border-blue-500' : ''}`}
+      >
+        <div className="flex flex-col">
+          {/* Group rows in sets of 3 */}
+          {[0, 1, 2].map(groupIndex => (
+            <div
+              key={`group-${groupIndex}`}
+              className={`grid grid-cols-9 gap-[2px] ${groupIndex < 2 ? 'mb-2' : ''}`}
+            >
+              {card?.grid
+                .slice(groupIndex * 3, groupIndex * 3 + 3)
+                .map((row, rowIndexInGroup) =>
+                  row.map((cell, colIndex) => {
+                    const rowIndex = groupIndex * 3 + rowIndexInGroup;
+                    return (
+                      <div
+                        key={`${rowIndex}-${colIndex}`}
+                        onClick={() => handleCellClick(cell)}
+                        style={{
+                          backgroundColor: cell ? '#E5E7EB' : card?.backgroundColor,
+                        }}
+                        className={`
+                      aspect-3/3 flex items-center justify-center text-[4vmin] md:text-[1.6vmin] lg:text-[2.1vmin] font-bold 
                       ${playable && cell ? 'cursor-pointer' : ''}
                       ${
                         playable && selectedNumbers.includes(cell || 0)
-                          ? 'bg-green-200 border-green-500'
+                          ? 'border-green-500 border-5'
                           : ''
                       }
                     `}
-                    >
-                      {cell || ''}
-                    </div>
-                  );
-                })
-              )}
-          </div>
-        ))}
-      </div>
-      {selectable && selectedCardIds?.includes(cardId) && (
-        <>
-          {/* Overlay */}
-          <div className="absolute top-0 left-0 w-full h-full bg-gray-500 opacity-50 cursor-not-allowed pointer-events-none rounded-lg"></div>
-          <div className="absolute top-0 left-0 w-full h-full">
-            <div className="flex items-center justify-center h-full text-green-300 opacity-100 text-4xl font-bold ">
-              {getPlayerName(cardId)}
+                      >
+                        {cell || ''}
+                      </div>
+                    );
+                  })
+                )}
             </div>
-          </div>
-        </>
-      )}
-    </div>
+          ))}
+        </div>
+        {selectable && selectedCardIds?.includes(cardId) && (
+          <>
+            {/* Overlay */}
+            <div className="absolute top-0 left-0 w-full h-full bg-gray-500 opacity-50 cursor-not-allowed pointer-events-none rounded-lg"></div>
+            <div className="absolute top-0 left-0 w-full h-full">
+              <div className="flex items-center justify-center h-full text-green-300 opacity-100 text-4xl font-bold ">
+                {getPlayerName(cardId)}
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+    </>
   );
 }

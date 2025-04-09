@@ -91,7 +91,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
       gameState.room.id,
       RealtimeEventEnum.NUMBER_CALLED,
       payload => {
-        if (payload.room) {
+        console.log('🚀 ~ useEffect ~ payload:', payload);
+        if (payload.number) {
           setGameState(prevState => ({
             ...prevState,
             room: {
