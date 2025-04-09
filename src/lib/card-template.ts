@@ -155,14 +155,14 @@ const template5A: LoToCard = {
   id: 'template-5A',
   backgroundColor: '#962136', // Dark magenta
   grid: [
-    [null, 12, null, 34, 40, null, 75, 89, null],
-    [8, 16, null, 42, 55, null, 77, null, null],
-    [null, 24, 33, null, null, 67, null, 83, 2],
-    [14, 27, null, 51, null, 78, 84, null, 6],
-    [null, 18, null, 38, 46, null, 63, null, 81],
-    [9, null, null, 47, null, 66, 79, 86, null],
-    [null, 4, null, 28, 31, null, 57, null, 72],
-    [17, null, 36, null, 52, 64, null, 80, 7],
+    [null, 12, null, 34, 40, null, 67, 75, null],
+    [8, 16, null, null, 42, 55, null, 77, 89],
+    [5, null, 24, 33, null, null, 63, null, 83],
+    [null, 14, 27, null, 51, null, null, 78, 84],
+    [null, 18, null, 38, 46, null, null, null, 81],
+    [9, null, null, null, 47, null, 66, 79, 86],
+    [4, null, 28, 31, null, 57, null, 72, null],
+    [null, 17, null, 36, null, 52, 64, null, 80],
     [null, 19, 23, null, 45, null, 62, 74, null]
   ]
 };
@@ -171,15 +171,15 @@ const template5B: LoToCard = {
   id: 'template-5B',
   backgroundColor: '#962136', // Dark magenta
   grid: [
-    [3, 15, null, 32, null, 60, 71, null, null],
-    [null, 10, 20, null, 43, 54, null, 85, null],
-    [null, null, 26, 35, null, 59, null, 76, null],
-    [13, null, 39, 49, null, 68, 73, null, 6],
-    [null, null, null, 13, 29, null, 48, 50, null],
-    [22, 30, null, 53, 65, null, 82, null, null],
-    [null, 1, 25, null, 58, 69, null, 90, null],
-    [21, null, 41, 56, null, null, 87, null, null],
-    [null, 11, null, 37, 44, null, 61, 70, 2]
+    [3, 15, null, 32, null, null, 60, 71, null],
+    [null, 10, 20, null, 43, 54, null, null, 85],
+    [2, null, 26, 35, null, 59, null, 76, null],
+    [6, null, null, 39, 49, null, 68, 73, null],
+    [null, 13, 29, null, 48, 50, null, null, 88],
+    [null, null, 30, null, 53, null, 65, null, 82],
+    [1, null, 25, null, null, 58, 69, null, 90],
+    [7, null, 21, null, 41, 56, null, 87, null],
+    [null, 11, null, 37, 44, null, 61, 70, null]
   ]
 };
 
@@ -188,15 +188,15 @@ const template6A: LoToCard = {
   id: 'template-6A',
   backgroundColor: '#5e3d26', // Dark brown
   grid: [
-    [1, null, 25, 39, null, 59, 73, null, 82],
-    [null, 11, 28, null, 40, null, 60, 80, null],
-    [5, null, null, 34, 45, 52, null, 87, null],
-    [null, 18, 27, null, 48, 56, 65, null, 83],
-    [9, null, 21, 30, null, null, 71, null, 89],
-    [null, 13, null, 37, 42, 50, 76, null, 90],
-    [2, null, 24, null, 49, 54, null, 81, null],
-    [null, 16, 20, 32, null, 58, 64, null, 86],
-    [7, 19, null, null, 47, null, 62, 85, null]
+    [9, null, null, null, 46, null, 65, null, 80],
+    [null, 11, null, 32, 45, null, 68, 78, null],
+    [8, null, 21, 33, null, 57, null, 73, null],
+    [6, null, 20, null, 43, null, 63, 77, null],
+    [null, 12, null, 31, null, 54, 62, null, 85],
+    [null, null, 27, 39, 40, null, null, 70, 82],
+    [null, 18, 29, null, null, 58, null, 74, 90],
+    [2, 17, null, 38, 44, null, 69, null, null],
+    [null, 16, null, 37, null, 55, 67, null, 88]
   ]
 };
 
@@ -204,15 +204,15 @@ const template6B: LoToCard = {
   id: 'template-6B',
   backgroundColor: '#5e3d26', // Dark brown
   grid: [
-    [null, 12, 26, null, 46, 51, null, 82, null],
-    [3, null, null, 31, 44, 57, 69, null, 79],
-    [null, 14, 22, null, 41, null, 66, 83, null],
-    [6, null, 23, 35, null, 55, null, 84, null],
-    [null, 10, null, 33, 43, 53, 67, null, 88],
-    [8, null, 29, null, null, null, 61, 86, null],
-    [null, 15, null, 36, 47, null, 74, 90, null],
-    [4, null, 38, null, 63, null, 68, null, 70],
-    [null, 17, null, null, 72, 75, 77, 78, null]
+    [null, 13, 22, null, 41, null, 61, null, 86],
+    [3, null, null, 34, null, 52, null, 71, null],
+    [1, null, null, 35, null, 56, 64, null, 83],
+    [null, 7, 23, null, 36, 53, null, 75, null],
+    [5, null, null, null, null, 59, null, null, 84],
+    [null, 14, 28, null, 42, null, 60, null, 87],
+    [null, null, 26, null, 47, 50, null, 79, 89],
+    [4, 10, null, 30, 49, null, 66, null, null],
+    [null, 15, 25, null, 51, null, null, 76, 81]
   ]
 };
 

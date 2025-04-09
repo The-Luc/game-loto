@@ -1,5 +1,6 @@
 import { useEffect, useCallback, useRef } from 'react';
-import { supabaseRealtime, RealtimeEvent, GamePayload } from '@/lib/supabase';
+import { supabaseRealtime, GamePayload } from '@/lib/supabase';
+import { RealtimeEventEnum } from '../enum';
 
 type UnsubscribeFn = () => void;
 
@@ -27,12 +28,12 @@ export function useSupabaseRealtime(roomId: string) {
    * @param callback Function to call when event is received
    */
   const subscribe = useCallback(
-    (event: RealtimeEvent, callback: (payload: GamePayload) => void) => {
+    (event: RealtimeEventEnum, callback: (payload: GamePayload) => void) => {
       if (!roomId) return;
-      
+
       const unsubscribe = supabaseRealtime.subscribe(roomId, event, callback);
       subscriptions.current.push(unsubscribe);
-      
+
       return unsubscribe;
     },
     [roomId]
@@ -44,7 +45,7 @@ export function useSupabaseRealtime(roomId: string) {
    * @param payload The data to send
    */
   const broadcast = useCallback(
-    async (event: RealtimeEvent, payload: Omit<GamePayload, 'roomId'>) => {
+    async (event: RealtimeEventEnum, payload: Omit<GamePayload, 'roomId'>) => {
       if (!roomId) return;
       return supabaseRealtime.broadcast(roomId, event, payload);
     },
@@ -59,10 +60,10 @@ export function useSupabaseRealtime(roomId: string) {
   const trackPresence = useCallback(
     (userId: string, userInfo: Record<string, string | number | boolean | null> = {}) => {
       if (!roomId || !userId) return;
-      
+
       const untrack = supabaseRealtime.trackPresence(roomId, userId, userInfo);
       subscriptions.current.push(untrack);
-      
+
       return untrack;
     },
     [roomId]
