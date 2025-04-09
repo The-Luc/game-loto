@@ -4,19 +4,33 @@ import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import confetti from 'canvas-confetti';
 import { useGame } from '@/context/GameContext';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from './ui/dialog';
 
 interface VictoryScreenProps {
   winner: string;
-  onCloseAction: () => void;
 }
 
-export function VictoryScreen({ winner, onCloseAction }: VictoryScreenProps) {
+export function VictoryScreen({ winner }: VictoryScreenProps) {
   const [showConfetti, setShowConfetti] = useState(true);
   const { gameState } = useGame();
+  const [open, setOpen] = useState(false);
+  console.log('🚀 ~ VictoryScreen ~ open:', open);
+
+  useEffect(() => {
+    if (!winner) return;
+    setOpen(true);
+  }, [winner]);
 
   // Trigger confetti effect when component mounts
   useEffect(() => {
-    if (showConfetti) {
+    if (showConfetti && winner) {
       // Create a confetti cannon
       const duration = 3 * 1000;
       const animationEnd = Date.now() + duration;
@@ -51,36 +65,38 @@ export function VictoryScreen({ winner, onCloseAction }: VictoryScreenProps) {
 
       return () => clearInterval(interval);
     }
-  }, [showConfetti]);
+  }, [showConfetti, winner]);
 
   const isWinner = winner === 'You' || winner === gameState.player?.nickname;
 
   return (
-    <div className="fixed inset-0 bg-black/8 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full text-center">
-        <h2 className="text-3xl font-bold mb-6 text-yellow-500">
-          {isWinner ? '🏆 You Won! 🏆' : `${winner} Won!`}
-        </h2>
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogContent className="shadow-lg md:w-[600px]">
+        {/* <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50"> */}
+        <div className="text-center">
+          <h2 className="text-3xl font-bold mb-6 text-yellow-500">
+            {isWinner ? '🏆 You Won! 🏆' : `${winner} Won!`}
+          </h2>
 
-        <div className="mb-8">
-          {isWinner ? (
-            <p className="text-xl">
-              Congratulations! You&apos;ve completed a row and won the game!
-            </p>
-          ) : (
-            <p className="text-xl">{winner} has completed a row and won the game!</p>
-          )}
+          <div className="mb-8">
+            {isWinner ? (
+              <p className="text-xl">
+                Congratulations! You&apos;ve completed a row and won the game!
+              </p>
+            ) : (
+              <p className="text-xl">{winner} has completed a row and won the game!</p>
+            )}
+          </div>
         </div>
-
-        <div className="flex justify-center">
+        <DialogFooter className="flex justify-center! ">
           <Button
-            onClick={onCloseAction}
+            onClick={() => setOpen(false)}
             className="bg-yellow-500 hover:bg-yellow-600 text-white px-8 py-2 text-lg"
           >
             Continue
           </Button>
-        </div>
-      </div>
-    </div>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

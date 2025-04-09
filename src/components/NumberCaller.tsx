@@ -7,8 +7,10 @@ import { readNumberInVietnamese } from '@/lib/game-utils';
 import { RoomStatus } from '@prisma/client';
 
 export function NumberCaller() {
-  const { gameState, callNextNumber, toggleAutoCall, isAutoCallingActive } = useGame();
+  const { gameState, callNextNumber, toggleAutoCall, isAutoCallingActive, startOver } =
+    useGame();
   const { room, player } = gameState;
+  const isWon = !!room?.winnerId;
 
   const isHost = player?.isHost;
 
@@ -37,20 +39,24 @@ export function NumberCaller() {
         </div>
       )}
 
-      {isHost && (
-        <div className="flex flex-col space-y-2">
-          <Button onClick={callNextNumber} disabled={isAutoCallingActive}>
-            Call Next Number
-          </Button>
+      <div className="flex flex-col space-y-2">
+        {isHost && !isWon && (
+          <>
+            <Button onClick={callNextNumber} disabled={isAutoCallingActive}>
+              Call Next Number
+            </Button>
 
-          <Button
-            variant={isAutoCallingActive ? 'destructive' : 'outline'}
-            onClick={toggleAutoCall}
-          >
-            {isAutoCallingActive ? 'Stop Auto-Calling' : 'Start Auto-Calling (5s)'}
-          </Button>
-        </div>
-      )}
+            <Button
+              variant={isAutoCallingActive ? 'destructive' : 'outline'}
+              onClick={toggleAutoCall}
+            >
+              {isAutoCallingActive ? 'Stop Auto-Calling' : 'Start Auto-Calling (5s)'}
+            </Button>
+          </>
+        )}
+
+        {isWon && <Button onClick={startOver}>Start Over</Button>}
+      </div>
 
       <div className="mt-4">
         <h3 className="font-semibold mb-2">Called Numbers</h3>

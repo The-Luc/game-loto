@@ -51,15 +51,12 @@ export async function createRoomAction(nickname: string): Promise<CreateRoomResp
 			}
 		});
 
-		// Generate a card for the player
-		const card = getRandomCardTemplate();
-
 		// Create the host player
 		const player = await prisma.player.create({
 			data: {
 				nickname,
 				isHost: true,
-				cardId: card.id,
+				cardId: '',
 				markedNumbers: [],
 				roomId: room.id,
 			}
@@ -118,15 +115,12 @@ export async function joinRoomAction(roomCode: string, nickname: string): Promis
 			return response;
 		}
 
-		// Generate a card for the player
-		const card = getRandomCardTemplate();
-
 		// Create a new player in the room
 		const player = await prisma.player.create({
 			data: {
 				nickname,
 				isHost: false,
-				cardId: card.id,
+				cardId: '',
 				markedNumbers: [],
 				roomId: room.id,
 			}

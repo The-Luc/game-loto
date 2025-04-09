@@ -16,11 +16,9 @@ export function LoToCard({
   selectable = false,
   playable = false,
 }: LoToCardProps) {
-  const { gameState, selectCard } = useGame();
+  const { gameState, selectCard, declareWinner } = useGame();
   const [selectedNumbers, setSelectedNumbers] = useState<number[]>([]);
   const [cardSet, setCardSet] = useState<Set<number>[]>([]);
-  const [hasWon, setHasWon] = useState<boolean>(false);
-  const [showVictoryScreen, setShowVictoryScreen] = useState<boolean>(false);
 
   const card = cardTemplates.find(card => card.id === cardId);
   const player = gameState.player;
@@ -28,6 +26,23 @@ export function LoToCard({
   const players = gameState.room?.players;
   const selectedCardIds = players?.map(p => p.cardId);
   const calledNumbers = gameState.room?.calledNumbers || [];
+  const winnerId = gameState.room?.winnerId;
+  const hasWon = !!winnerId;
+
+  let winner = null;
+
+  if (winnerId) {
+    winner = players?.find(p => p.id === winnerId)?.nickname || 'Unknown';
+    if (winner === player?.nickname) {
+      winner = 'You';
+    }
+  }
+
+  useEffect(() => {
+    if (!winnerId) {
+      setSelectedNumbers([]);
+    }
+  }, [winnerId]);
 
   useEffect(() => {
     if (!card) return;
@@ -54,8 +69,7 @@ export function LoToCard({
 
         if (hasWon) {
           // player has won
-          setHasWon(true);
-          setShowVictoryScreen(true);
+          declareWinner(player?.id || '');
         }
       }
     }
@@ -75,13 +89,14 @@ export function LoToCard({
       }
       break;
     }
+    return false;
   };
 
   return (
     <>
-      {showVictoryScreen && (
-        <VictoryScreen winner="You" onCloseAction={() => setShowVictoryScreen(false)} />
-      )}
+      {/* {hasWon && <VictoryScreen winner={winner || ''} />} */}
+      <VictoryScreen winner={winner || ''} />
+
       <div
         className={`border-2 rounded-lg p-2 relative bg-black/80 ${
           selectable ? 'cursor-pointer hover:border-blue-500' : ''
@@ -111,7 +126,7 @@ export function LoToCard({
                       ${playable && cell ? 'cursor-pointer' : ''}
                       ${
                         playable && selectedNumbers.includes(cell || 0)
-                          ? 'border-green-500 border-5'
+                          ? 'bg-green-300! border-green-600! border-2!'
                           : ''
                       }
                     `}

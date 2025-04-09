@@ -20,6 +20,8 @@ interface GameContextType {
   markNumber: (number: number) => void;
   callNextNumber: () => void;
   toggleAutoCall: () => void;
+  declareWinner: (playerId: string) => void;
+  startOver: () => void;
   isAutoCallingActive: boolean;
 }
 
@@ -149,20 +151,44 @@ export function GameProvider({ children }: { children: ReactNode }) {
     );
     if (cardUpdatedUnsub) unsubscribers.push(cardUpdatedUnsub);
 
-    // Track presence of the current player
-    let presenceUnsubscriber;
-    if (gameState.player) {
-      presenceUnsubscriber = supabaseRealtime.trackPresence(
-        gameState.room.id,
-        gameState.player.id,
-        {
-          nickname: gameState.player.nickname,
-          isHost: gameState.player.isHost,
-          cardId: gameState.player.cardId || null,
+    // winner declared event
+    const winnerDeclaredUnsub = supabaseRealtime.subscribe(
+      gameState.room.id,
+      RealtimeEventEnum.WINNER_DECLARED,
+      payload => {
+        if (!payload.playerId || !gameState.room) return;
+        // stop the auto-calling
+        if (autoCallInterval) {
+          clearInterval(autoCallInterval);
+          setAutoCallInterval(null);
+          setIsAutoCallingActive(false);
         }
-      );
-      if (presenceUnsubscriber) unsubscribers.push(presenceUnsubscriber);
-    }
+
+        setGameState(prevState => ({
+          ...prevState,
+          room: {
+            ...prevState.room,
+            winnerId: payload.playerId,
+          },
+        }));
+      }
+    );
+    if (winnerDeclaredUnsub) unsubscribers.push(winnerDeclaredUnsub);
+
+    // // Track presence of the current player
+    // let presenceUnsubscriber;
+    // if (gameState.player) {
+    //   presenceUnsubscriber = supabaseRealtime.trackPresence(
+    //     gameState.room.id,
+    //     gameState.player.id,
+    //     {
+    //       nickname: gameState.player.nickname,
+    //       isHost: gameState.player.isHost,
+    //       cardId: gameState.player.cardId || null,
+    //     }
+    //   );
+    //   if (presenceUnsubscriber) unsubscribers.push(presenceUnsubscriber);
+    // }
 
     // Clean up subscriptions when component unmounts or roomId changes
     return () => {
@@ -264,6 +290,53 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
     // Broadcast room update to other players
     await supabaseRealtime.broadcast(gameState.room.id, RealtimeEventEnum.GAME_STARTED, {
+      room: updatedRoom,
+    });
+  };
+
+  // Declare winner
+  const declareWinner = async (playerId: string) => {
+    if (!gameState.room) return;
+
+    const updatedRoom = {
+      ...gameState.room,
+      winnerId: playerId,
+    };
+
+    setGameState({
+      ...gameState,
+      room: updatedRoom,
+    });
+
+    // stop the auto-calling
+    if (autoCallInterval) {
+      clearInterval(autoCallInterval);
+      setAutoCallInterval(null);
+      setIsAutoCallingActive(false);
+    }
+
+    // Broadcast room update to other players
+    await supabaseRealtime.broadcast(
+      gameState.room.id,
+      RealtimeEventEnum.WINNER_DECLARED,
+      {
+        playerId,
+      }
+    );
+  };
+
+  // Start over
+  const startOver = async () => {
+    if (!gameState.room) return;
+
+    const updatedRoom = {
+      ...gameState.room,
+      winnerId: null,
+      status: RoomStatus.waiting,
+    };
+
+    setGameState({
+      ...gameState,
       room: updatedRoom,
     });
   };
@@ -389,7 +462,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
       // Use a function reference that will always use the latest state
       const interval = setInterval(() => {
         setTrigger(prev => prev + 1);
-      }, 4000); // 4 seconds interval
+      }, 5000); // 5 seconds interval
 
       setAutoCallInterval(interval);
       setIsAutoCallingActive(true);
@@ -411,6 +484,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
         markNumber,
         callNextNumber,
         toggleAutoCall,
+        declareWinner,
+        startOver,
         isAutoCallingActive,
       }}
     >

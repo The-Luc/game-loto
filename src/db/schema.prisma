@@ -22,6 +22,7 @@ model Room {
   players       Player[]
   status        RoomStatus
   calledNumbers Int[]
+  winnerId      String?
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
 }
