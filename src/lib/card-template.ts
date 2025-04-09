@@ -221,15 +221,15 @@ const template7A: LoToCard = {
   id: 'template-7A',
   backgroundColor: '#3e3466', // Dark purple
   grid: [
-    [7, null, 20, 36, null, 56, 77, null, 80],
-    [null, 15, 26, null, 41, null, 63, 83, null],
-    [2, null, null, 33, 47, 51, null, 88, null],
-    [null, 19, 23, null, 46, 55, 61, null, 82],
-    [5, null, 28, 31, null, null, 75, null, 86],
-    [null, 11, null, 37, 40, 50, 79, null, 90],
-    [9, null, 27, null, 43, 54, null, 81, null],
-    [null, 17, 22, 30, null, 59, 60, null, 84],
-    [3, 14, null, null, 49, null, 62, 85, null]
+    [6, null, null, null, 47, null, 69, null, 86],
+    [null, 13, null, 31, 44, null, 61, 70, null],
+    [7, null, 24, null, null, 56, null, 71, null],
+    [5, null, 23, null, 41, null, null, 65, 74],
+    [null, 10, null, 37, null, 53, 60, null, 89],
+    [null, null, null, 38, 42, null, null, 75, 84],
+    [null, 15, 25, null, null, 51, null, 77, 85],
+    [3, 12, null, 36, 43, null, 64, null, 82],
+    [null, 18, 26, 39, null, 58, 66, null, null]
   ]
 };
 
@@ -237,15 +237,15 @@ const template7B: LoToCard = {
   id: 'template-7B',
   backgroundColor: '#3e3466', // Dark purple
   grid: [
-    [null, 10, 29, null, 44, 52, null, 80, null],
-    [8, null, null, 32, 45, 58, 70, null, 81],
-    [null, 16, 21, null, 48, null, 64, 82, null],
-    [1, null, 24, 39, null, 53, null, 84, null],
-    [null, 13, null, 34, 42, null, 65, null, 89],
-    [6, null, 25, null, null, 57, 67, 87, null],
-    [null, 12, null, 35, null, null, 74, 90, null],
-    [4, null, 38, null, 66, null, 68, null, 71],
-    [null, 18, null, null, 69, 72, 73, 76, null]
+    [null, 16, 28, null, 45, null, 68, null, 87],
+    [4, null, 29, null, 35, 55, null, 73, null],
+    [9, null, null, 30, null, 54, 62, null, 88],
+    [1, null, 21, null, 33, null, 52, null, 76],
+    [8, null, null, null, 40, 50, null, null, 81],
+    [null, 11, 20, null, 46, null, 63, null, 83],
+    [null, null, null, null, 49, 59, null, 72, 80],
+    [2, null, 19, null, 32, null, null, 67, null],
+    [null, 14, 22, null, null, 57, null, 78, 90]
   ]
 };
 
