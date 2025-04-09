@@ -1,10 +1,11 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { supabase } from '@/lib/supabase';
-import { GameState, LoToCard } from '@/types';
+import { supabaseRealtime } from '@/lib/supabase';
+import { GameState } from '@/types';
 import { createRoomAction, joinRoomAction, leaveRoomAction } from '../actions/room';
-import { Room, RoomStatus } from '@prisma/client';
+import { Room, RoomStatus, Player } from '@prisma/client';
+import { RealtimeEventEnum } from '../enum';
 
 interface GameContextType {
   gameState: GameState;
@@ -15,7 +16,7 @@ interface GameContextType {
   leaveRoom: () => void;
   startGame: () => void;
   kickPlayer: (playerId: string) => void;
-  selectCard: (cardId: string) => void;
+  selectCard: (cardId: string) => Promise<void>;
   markNumber: (number: number) => void;
   callNextNumber: () => void;
   toggleAutoCall: () => void;
@@ -29,25 +30,151 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const [nickname, setNickname] = useState<string>('');
   const [isAutoCallingActive, setIsAutoCallingActive] = useState<boolean>(false);
   const [autoCallInterval, setAutoCallInterval] = useState<NodeJS.Timeout | null>(null);
+  const [trigger, setTrigger] = useState<number>(0);
 
   // Subscribe to room changes when we have a room
   useEffect(() => {
     if (!gameState.room?.id) return;
 
-    const roomChannel = supabase
-      .channel(`room:${gameState.room.id}`)
-      .on('broadcast', { event: 'room_update' }, payload => {
-        setGameState(prevState => ({
-          ...prevState,
-          room: payload.payload as Room,
-        }));
-      })
-      .subscribe();
+    // Set up subscriptions for various game events
+    const unsubscribers: Array<() => void> = [];
 
+    // Game started event
+    const roomUpdateUnsub = supabaseRealtime.subscribe(
+      gameState.room.id,
+      RealtimeEventEnum.GAME_STARTED,
+      payload => {
+        console.log('🚀 ~ useEffect ~ GAME_STARTED EVENT:', payload);
+        if (payload.room) {
+          setGameState(prevState => ({
+            ...prevState,
+            room: payload.room as Room,
+          }));
+        }
+      }
+    );
+    if (roomUpdateUnsub) unsubscribers.push(roomUpdateUnsub);
+
+    // Player joined event
+    const playerJoinedUnsub = supabaseRealtime.subscribe(
+      gameState.room.id,
+      RealtimeEventEnum.PLAYER_JOINED,
+      payload => {
+        console.log('🚀 ~ useEffect ~ PLAYER_JOINED EVENT:', payload);
+        if (payload.room) {
+          setGameState(prevState => ({
+            ...prevState,
+            room: payload.room as Room,
+          }));
+        }
+      }
+    );
+    if (playerJoinedUnsub) unsubscribers.push(playerJoinedUnsub);
+
+    // Player left event
+    const playerLeftUnsub = supabaseRealtime.subscribe(
+      gameState.room.id,
+      RealtimeEventEnum.PLAYER_LEFT,
+      payload => {
+        if (payload.room) {
+          setGameState(prevState => ({
+            ...prevState,
+            room: payload.room as Room,
+          }));
+        }
+      }
+    );
+    if (playerLeftUnsub) unsubscribers.push(playerLeftUnsub);
+
+    // Number called event
+    const numberCalledUnsub = supabaseRealtime.subscribe(
+      gameState.room.id,
+      RealtimeEventEnum.NUMBER_CALLED,
+      payload => {
+        if (payload.room) {
+          setGameState(prevState => ({
+            ...prevState,
+            room: {
+              ...prevState.room,
+              calledNumbers: [...(prevState.room?.calledNumbers || []), payload.number],
+            },
+          }));
+        }
+      }
+    );
+    if (numberCalledUnsub) unsubscribers.push(numberCalledUnsub);
+
+    // Card selected event
+    const cardSelectedUnsub = supabaseRealtime.subscribe(
+      gameState.room.id,
+      RealtimeEventEnum.CARD_SELECTED,
+      payload => {
+        console.log('🚀 ~ useEffect ~ payload:', payload);
+        if (payload?.playerId && typeof payload.playerId === 'string') {
+          const playerId = payload.playerId;
+          const cardId = payload.cardId as string;
+          setGameState(prevState => ({
+            ...prevState,
+            readyPlayerIds: [...(prevState.readyPlayerIds || []), playerId],
+            room: {
+              ...prevState.room,
+              players: (prevState.room?.players || []).map(p =>
+                p.id === playerId ? { ...p, cardId } : p
+              ),
+            },
+          }));
+        }
+      }
+    );
+    if (cardSelectedUnsub) unsubscribers.push(cardSelectedUnsub);
+
+    // Card updated event
+    const cardUpdatedUnsub = supabaseRealtime.subscribe(
+      gameState.room.id,
+      RealtimeEventEnum.CARD_UPDATED,
+      payload => {
+        if (
+          payload.player &&
+          typeof payload.player === 'object' &&
+          'id' in payload.player &&
+          payload.player.id === gameState.player?.id
+        ) {
+          setGameState(prevState => ({
+            ...prevState,
+            player: payload.player as Player,
+          }));
+        }
+      }
+    );
+    if (cardUpdatedUnsub) unsubscribers.push(cardUpdatedUnsub);
+
+    // Track presence of the current player
+    let presenceUnsubscriber;
+    if (gameState.player) {
+      presenceUnsubscriber = supabaseRealtime.trackPresence(
+        gameState.room.id,
+        gameState.player.id,
+        {
+          nickname: gameState.player.nickname,
+          isHost: gameState.player.isHost,
+          cardId: gameState.player.cardId || null,
+        }
+      );
+      if (presenceUnsubscriber) unsubscribers.push(presenceUnsubscriber);
+    }
+
+    // Clean up subscriptions when component unmounts or roomId changes
     return () => {
-      supabase.removeChannel(roomChannel);
+      console.log('Cleaning up subscriptions 🍀 🍀🍀');
+      unsubscribers.forEach(unsub => unsub && unsub());
     };
-  }, [gameState.room?.id]);
+  }, [gameState.room?.id, gameState.player?.id]);
+
+  useEffect(() => {
+    if (gameState.player?.isHost && isAutoCallingActive) {
+      callNextNumber();
+    }
+  }, [trigger, gameState.player?.isHost, isAutoCallingActive]);
 
   // Clean up auto-calling on unmount
   useEffect(() => {
@@ -67,8 +194,6 @@ export function GameProvider({ children }: { children: ReactNode }) {
         return '';
       }
 
-      // In a real implementation, we would save this to Supabase
-      // For now, we'll just update our local state
       setGameState({
         room: room,
         player: player,
@@ -93,7 +218,12 @@ export function GameProvider({ children }: { children: ReactNode }) {
     });
 
     // Broadcast room update to other players
-    // In a real implementation, this would happen through Supabase Realtime
+    if (room?.id) {
+      await supabaseRealtime.broadcast(room.id, RealtimeEventEnum.PLAYER_JOINED, {
+        room,
+        player,
+      });
+    }
 
     return true;
   };
@@ -104,31 +234,26 @@ export function GameProvider({ children }: { children: ReactNode }) {
     const roomId = gameState.room.id;
     const playerId = gameState.player.id;
 
-    const { success } = await leaveRoomAction(roomId, playerId);
+    const result = await leaveRoomAction(roomId, playerId);
 
-    if (!success) return;
+    if (!result.success) return;
 
-    // const updatedPlayers = gameState.room?.players?.filter(
-    //   player => player.id !== gameState.player?.id
-    // );
-
-    // if (updatedPlayers?.length > 0) {
-    // Update room with remaining players
-
-    // Broadcast room update to other players
-    // In a real implementation, this would happen through Supabase Realtime
+    // Broadcast player left event to other players
+    await supabaseRealtime.broadcast(roomId, RealtimeEventEnum.PLAYER_LEFT, {
+      playerId,
+    });
 
     // Clear local state
     setGameState({});
   };
 
   // Start the game (host only)
-  const startGame = () => {
+  const startGame = async () => {
     if (!gameState.room || !gameState.player?.isHost) return;
 
     const updatedRoom = {
       ...gameState.room,
-      status: RoomStatus.selecting,
+      status: RoomStatus.playing,
     };
 
     setGameState({
@@ -137,7 +262,9 @@ export function GameProvider({ children }: { children: ReactNode }) {
     });
 
     // Broadcast room update to other players
-    // In a real implementation, this would happen through Supabase Realtime
+    await supabaseRealtime.broadcast(gameState.room.id, RealtimeEventEnum.GAME_STARTED, {
+      room: updatedRoom,
+    });
   };
 
   // Kick a player (host only)
@@ -164,9 +291,9 @@ export function GameProvider({ children }: { children: ReactNode }) {
   };
 
   // Select a card during the selection phase
-  const selectCard = (cardId: string) => {
+  const selectCard = async (cardId: string) => {
     if (!gameState.room || !gameState.player) return;
-    if (gameState.room.status !== RoomStatus.selecting) return;
+    // if (gameState.room.status !== RoomStatus.selecting) return;
 
     const updatedPlayer = {
       ...gameState.player,
@@ -176,14 +303,24 @@ export function GameProvider({ children }: { children: ReactNode }) {
     setGameState({
       ...gameState,
       player: updatedPlayer,
+      readyPlayerIds: [...(gameState.readyPlayerIds || []), gameState.player.id],
+      room: {
+        ...gameState.room,
+        players: (gameState.room?.players || []).map(p =>
+          p.id === gameState.player?.id ? updatedPlayer : p
+        ),
+      },
     });
 
-    // Broadcast room update to other players
-    // In a real implementation, this would happen through Supabase Realtime
+    // Broadcast card selection to other players
+    await supabaseRealtime.broadcast(gameState.room.id, RealtimeEventEnum.CARD_SELECTED, {
+      playerId: gameState.player.id,
+      cardId,
+    });
   };
 
   // Mark a number on player's card
-  const markNumber = (number: number) => {
+  const markNumber = async (number: number) => {
     if (!gameState.room || !gameState.player) return;
     if (gameState.room.status !== RoomStatus.playing) return;
 
@@ -199,12 +336,14 @@ export function GameProvider({ children }: { children: ReactNode }) {
       player: updatedPlayer,
     });
 
-    // Broadcast room update to other players
-    // In a real implementation, this would happen through Supabase Realtime
+    // Broadcast card update to other players
+    await supabaseRealtime.broadcast(gameState.room.id, RealtimeEventEnum.CARD_UPDATED, {
+      player: updatedPlayer,
+    });
   };
 
   // Call the next number (host only)
-  const callNextNumber = () => {
+  const callNextNumber = async () => {
     if (!gameState.room || !gameState.player?.isHost) return;
     if (gameState.room.status !== RoomStatus.playing) return;
 
@@ -231,8 +370,10 @@ export function GameProvider({ children }: { children: ReactNode }) {
       room: updatedRoom,
     });
 
-    // Broadcast room update to other players
-    // In a real implementation, this would happen through Supabase Realtime
+    // Broadcast number called to all players
+    await supabaseRealtime.broadcast(gameState.room.id, RealtimeEventEnum.NUMBER_CALLED, {
+      number: newNumber,
+    });
   };
 
   // Toggle auto-calling of numbers
@@ -244,9 +385,10 @@ export function GameProvider({ children }: { children: ReactNode }) {
       setAutoCallInterval(null);
       setIsAutoCallingActive(false);
     } else {
+      // Use a function reference that will always use the latest state
       const interval = setInterval(() => {
-        callNextNumber();
-      }, 5000); // 5 seconds interval
+        setTrigger(prev => prev + 1);
+      }, 4000); // 4 seconds interval
 
       setAutoCallInterval(interval);
       setIsAutoCallingActive(true);

@@ -18,21 +18,23 @@ import { LoToCard } from '../types';
 // Template Pair 1
 const template1A: LoToCard = {
   id: 'template-1A',
+  backgroundColor: '#FFE0E0', // Light red
   grid: [
     [1, 14, 28, null, 50, null, 75, 90],
     [null, 19, null, 31, 49, 68, null, 81],
     [5, null, 20, null, 47, null, 77, 84],
     [null, 12, null, 38, 55, 69, null, 89],
-    [null, 1, 36, 41, null, 66, 71, null],
-    [18, 26, null, null, 57, null, 70, 88],
+    [null, 11, 36, 41, null, 66, 71, null],
+    [6, 26, null, null, 57, null, 70, 88],
     [8, null, 25, 33, 52, 62, null, null],
     [9, null, null, 35, 46, 60, 73, null],
-    [10, 27, null, null, 48, 59, null, 86]
+    [3, 27, null, null, 48, 59, null, 86]
   ]
 };
 
 const template1B: LoToCard = {
   id: 'template-1B',
+  backgroundColor: '#FFE0E0', // Light red
   grid: [
     [null, 15, 24, 44, null, 64, 79, null],
     [4, null, 29, 30, null, 51, 76, null],
@@ -49,6 +51,7 @@ const template1B: LoToCard = {
 // Template Pair 2
 const template2A: LoToCard = {
   id: 'template-2A',
+  backgroundColor: '#E0FFE0', // Light green
   grid: [
     [2, null, 21, 37, null, 58, 72, null],
     [null, 16, 29, null, 45, null, 61, 83],
@@ -64,6 +67,7 @@ const template2A: LoToCard = {
 
 const template2B: LoToCard = {
   id: 'template-2B',
+  backgroundColor: '#E0FFE0', // Light green
   grid: [
     [null, 14, 20, null, 47, 56, null, 84],
     [6, null, null, 31, 41, 54, 75, null],
@@ -80,6 +84,7 @@ const template2B: LoToCard = {
 // Template Pair 3
 const template3A: LoToCard = {
   id: 'template-3A',
+  backgroundColor: '#E0E0FF', // Light blue
   grid: [
     [3, 15, null, 36, null, 51, null, 82],
     [null, 10, 28, null, 46, null, 74, 88],
@@ -95,6 +100,7 @@ const template3A: LoToCard = {
 
 const template3B: LoToCard = {
   id: 'template-3B',
+  backgroundColor: '#E0E0FF', // Light blue
   grid: [
     [null, 12, 22, null, 43, 57, null, 81],
     [9, null, null, 30, 40, 53, 70, null],
@@ -111,6 +117,7 @@ const template3B: LoToCard = {
 // Template Pair 4
 const template4A: LoToCard = {
   id: 'template-4A',
+  backgroundColor: '#FFFFD0', // Light yellow
   grid: [
     [4, null, 22, 38, null, 55, 75, null],
     [null, 13, 27, null, 42, null, 62, 81],
@@ -126,6 +133,7 @@ const template4A: LoToCard = {
 
 const template4B: LoToCard = {
   id: 'template-4B',
+  backgroundColor: '#FFFFD0', // Light yellow
   grid: [
     [null, 11, 26, null, 43, 51, null, 82],
     [8, null, null, 33, 40, 57, 69, null],
@@ -142,6 +150,7 @@ const template4B: LoToCard = {
 // Template Pair 5
 const template5A: LoToCard = {
   id: 'template-5A',
+  backgroundColor: '#FFE0FF', // Light purple
   grid: [
     [6, null, 23, 35, null, 57, 76, null],
     [null, 14, 25, null, 43, null, 64, 82],
@@ -157,6 +166,7 @@ const template5A: LoToCard = {
 
 const template5B: LoToCard = {
   id: 'template-5B',
+  backgroundColor: '#FFE0FF', // Light purple
   grid: [
     [null, 15, 24, null, 45, 52, null, 83],
     [7, null, null, 32, 40, 56, 71, null],
@@ -173,6 +183,7 @@ const template5B: LoToCard = {
 // Template Pair 6
 const template6A: LoToCard = {
   id: 'template-6A',
+  backgroundColor: '#E0FFFF', // Light cyan
   grid: [
     [1, null, 25, 39, null, 59, 73, null],
     [null, 11, 28, null, 40, null, 60, 80],
@@ -188,6 +199,7 @@ const template6A: LoToCard = {
 
 const template6B: LoToCard = {
   id: 'template-6B',
+  backgroundColor: '#E0FFFF', // Light cyan
   grid: [
     [null, 12, 26, null, 46, 51, null, 82],
     [3, null, null, 31, 44, 57, 69, null],
@@ -204,6 +216,7 @@ const template6B: LoToCard = {
 // Template Pair 7
 const template7A: LoToCard = {
   id: 'template-7A',
+  backgroundColor: '#FFF0D0', // Light orange
   grid: [
     [7, null, 20, 36, null, 56, 77, null],
     [null, 15, 26, null, 41, null, 63, 83],
@@ -219,6 +232,7 @@ const template7A: LoToCard = {
 
 const template7B: LoToCard = {
   id: 'template-7B',
+  backgroundColor: '#FFF0D0', // Light orange
   grid: [
     [null, 10, 29, null, 44, 52, null, 80],
     [8, null, null, 32, 45, 58, 70, null],
@@ -235,6 +249,7 @@ const template7B: LoToCard = {
 // Template Pair 8
 const template8A: LoToCard = {
   id: 'template-8A',
+  backgroundColor: '#D0FFE0', // Light mint
   grid: [
     [9, null, 24, 32, null, 53, 78, null],
     [null, 10, 29, null, 44, null, 66, 84],
@@ -250,6 +265,7 @@ const template8A: LoToCard = {
 
 const template8B: LoToCard = {
   id: 'template-8B',
+  backgroundColor: '#D0FFE0', // Light mint
   grid: [
     [null, 17, 20, null, 45, 58, null, 81],
     [4, null, null, 33, 41, 55, 70, null],
@@ -266,6 +282,7 @@ const template8B: LoToCard = {
 // Template Pair 9
 const template9A: LoToCard = {
   id: 'template-9A',
+  backgroundColor: '#E0D0FF', // Light lavender
   grid: [
     [5, null, 27, 33, null, 51, 79, null],
     [null, 12, 22, null, 47, null, 67, 85],
@@ -281,8 +298,9 @@ const template9A: LoToCard = {
 
 const template9B: LoToCard = {
   id: 'template-9B',
+  backgroundColor: '#E0D0FF', // Light lavender
   grid: [
-    [null, 18, 21, null, 44, 59, null, 81],
+    [null, 16, 21, null, 44, 59, null, 81],
     [2, null, null, 31, 45, 54, 71, null],
     [null, 11, 25, null, 48, null, 61, 84],
     [7, null, 23, 34, null, 55, null, 87],
@@ -297,6 +315,7 @@ const template9B: LoToCard = {
 // Template Pair 10
 const template10A: LoToCard = {
   id: 'template-10A',
+  backgroundColor: '#D0F0FF', // Light sky blue
   grid: [
     [6, null, 29, 31, null, 54, 74, null],
     [null, 13, 20, null, 48, null, 69, 86],
@@ -312,8 +331,9 @@ const template10A: LoToCard = {
 
 const template10B: LoToCard = {
   id: 'template-10B',
+  backgroundColor: '#D0F0FF', // Light sky blue
   grid: [
-    [null, 18, 21, null, 43, 58, null, 82],
+    [null, 15, 21, null, 43, 58, null, 82],
     [1, null, null, 30, 46, 55, 71, null],
     [null, 11, 26, null, 45, null, 61, 85],
     [8, null, 23, 34, null, 56, null, 87],

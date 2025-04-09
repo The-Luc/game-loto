@@ -11,8 +11,8 @@ import { RoomStatus } from '@prisma/client';
 
 export function Room() {
   const { gameState, leaveRoom, startGame } = useGame();
+
   const { room, player } = gameState;
-  console.log('🚀 ~ Room i~ room:', room);
 
   // Redirect if no room or player
   useEffect(() => {
@@ -27,7 +27,6 @@ export function Room() {
 
   const isHost = player.isHost;
   const isWaiting = room.status === RoomStatus.waiting;
-  const isSelecting = room.status === RoomStatus.selecting;
   const isPlaying = room.status === RoomStatus.playing;
 
   return (
@@ -49,7 +48,6 @@ export function Room() {
         <div className="md:col-span-2">
           {isWaiting && isHost && (
             <div className="bg-white rounded-lg shadow p-4 mb-4">
-              <h2 className="text-xl font-bold mb-4">Waiting for Players</h2>
               <p className="mb-4">
                 Share this code with your friends:{' '}
                 <span className="font-bold">{room.code}</span>
@@ -65,7 +63,7 @@ export function Room() {
             </div>
           )}
 
-          {isSelecting && <CardSelection />}
+          {isWaiting && <CardSelection />}
 
           {isPlaying && player.cardId && (
             <div className="bg-white rounded-lg shadow p-4 mb-4">

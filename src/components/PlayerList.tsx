@@ -2,22 +2,22 @@
 
 import { useGame } from '@/context/GameContext';
 import { Button } from '@/components/ui/button';
+import { Badge } from './ui/badge';
 
 export function PlayerList() {
   const { gameState, kickPlayer } = useGame();
-  const { room, player, otherPlayers } = gameState;
-  console.log('🚀 ~ PlayerList ~ room:', room);
+  const { room, player } = gameState;
 
   if (!room || !player) return null;
 
   const isHost = player.isHost;
-  const allPlayers = [player, ...(otherPlayers || [])];
+  const readyPlayerIds = gameState.readyPlayerIds || [];
 
   return (
     <div className="bg-white rounded-lg shadow p-4">
       <h2 className="text-xl font-bold mb-4">Players</h2>
       <ul className="space-y-2">
-        {allPlayers.map(p => (
+        {room?.players?.map(p => (
           <li key={p.id} className="flex items-center justify-between p-2 border-b">
             <div className="flex items-center">
               <span className="font-medium">{p.nickname}</span>
@@ -32,8 +32,13 @@ export function PlayerList() {
                 </span>
               )}
             </div>
+            {readyPlayerIds.includes(p.id) && (
+              <Badge variant="outline" className="ml-2">
+                Ready
+              </Badge>
+            )}
 
-            {isHost && p.id !== player.id && (
+            {false && isHost && p.id !== player?.id && (
               <Button variant="destructive" size="sm" onClick={() => kickPlayer(p.id)}>
                 Kick
               </Button>

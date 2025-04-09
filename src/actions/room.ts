@@ -3,8 +3,9 @@
 import { prisma } from '@/lib/prisma';
 import { generateRoomCode } from '@/lib/game-utils';
 import { getRandomCardTemplate } from '@/lib/card-template';
-import { Player, Room, RoomStatus } from '@prisma/client';
+import { Player, RoomStatus } from '@prisma/client';
 import { handleApiResponse } from '../lib/utils';
+import { Room } from '@/types';
 
 type CreateRoomResponse = {
 	success: boolean;
@@ -72,7 +73,10 @@ export async function createRoomAction(nickname: string): Promise<CreateRoomResp
 
 		return {
 			success: true,
-			room,
+			room: {
+				...room,
+				players: [player],
+			},
 			player,
 		};
 	} catch (error) {
@@ -94,8 +98,6 @@ export async function joinRoomAction(roomCode: string, nickname: string): Promis
 			where: { code: roomCode },
 			include: { players: true }
 		});
-		console.log("🚀 ~ joinRoomAction ~ room:", room)
-		console.log("🚀 ~ joinRoomAction ~ nickname:", nickname)
 
 		if (!room) {
 			const response = {
@@ -132,7 +134,10 @@ export async function joinRoomAction(roomCode: string, nickname: string): Promis
 
 		return {
 			success: true,
-			room,
+			room: {
+				...room,
+				players: [...(room.players || []), player],
+			},
 			player
 		};
 	} catch (error) {
