@@ -2,7 +2,9 @@ import { LoToCard } from '../types';
 
 /**
  * Card templates for Lô Tô game
- * Each template pair (A and B) has complementary numbers and the same background color
+ * Each template pair (A and B) has complementary numbers which means 
+ * for any given number, it only appears in one of the templates
+ * and the same background color each pair of templates
  * Numbers are organized by columns:
  * - Column 1: 1-9
  * - Column 2: 10-19
@@ -37,81 +39,81 @@ const template1B: LoToCard = {
   id: 'template-1B',
   backgroundColor: '#1e5ee8', // Dark blue
   grid: [
-    [null, 15, 24, 44, null, 64, 79, null, 82],
-    [4, null, 29, 30, null, 51, 76, null, 84],
-    [null, 17, 32, null, 53, 63, null, 80, null],
-    [7, null, 23, null, null, 56, 61, 85, null],
-    [null, 11, null, 34, 42, null, null, 72, 87],
-    [3, 13, null, null, 45, 54, 74, null, 90],
-    [null, 16, 21, null, 43, null, 58, 78, null],
-    [6, null, 37, 40, null, 65, null, null, 83],
-    [2, 22, null, 39, null, 67, null, null, 86]
+    [9, null, 25, 38, 53, null, null, null, 86],
+    [null, 15, null, 36, null, 51, 64, null, 90],
+    [2, null, 28, null, 47, null, 66, 78, null],
+    [5, 10, null, null, 41, 56, null, 72, null],
+    [4, null, 22, 33, null, 54, null, 74, null],
+    [null, 13, 26, null, 40, null, 61, null, 82],
+    [null, 29, 30, null, 58, 62, null, null, 83],
+    [null, 21, null, 43, 52, null, 75, null, 84],
+    [6, 18, null, 32, null, null, 69, 70, null]
   ]
 };
 
 // Template Pair 2
 const template2A: LoToCard = {
   id: 'template-2A',
-  backgroundColor: '#1e8e3e', // Dark green
+  backgroundColor: '#d3c600', // Dark yellow
   grid: [
-    [2, null, 21, 37, null, 58, 72, null, 80],
-    [null, 16, 29, null, 45, null, 61, 83, null],
-    [7, null, null, 32, 48, 57, null, 85, null],
-    [null, 11, 25, null, 44, 59, 70, null, 82],
-    [3, null, 24, 39, null, null, 76, null, 87],
-    [null, 19, null, 33, 46, 55, 78, null, 90],
-    [9, null, 28, null, 49, 53, null, 81, null],
-    [null, 13, 27, 35, null, 52, 67, null, 84],
-    [5, 18, null, null, 43, null, 69, null, 89]
+    [null, 15, 24, null, 44, null, 64, 79, null],
+    [4, null, 29, 30, null, 51, null, 76, null],
+    [null, 17, null, 32, null, 53, 63, null, 80],
+    [7, null, 23, null, null, 56, 61, null, 85],
+    [null, 11, null, 34, 42, null, null, 72, 87],
+    [3, 13, null, null, 45, 54, null, 74, null],
+    [null, 16, 21, null, 43, 58, null, 78, null],
+    [6, null, null, 37, 40, null, 65, null, 82],
+    [2, null, 22, 39, null, null, 67, null, 83]
   ]
 };
 
 const template2B: LoToCard = {
   id: 'template-2B',
-  backgroundColor: '#1e8e3e', // Dark green
+  backgroundColor: '#d3c600', // Dark yellow
   grid: [
-    [null, 14, 20, null, 47, 56, null, 84, null],
-    [6, null, null, 31, 41, 54, 75, null, 81],
-    [null, 15, 26, null, 40, null, 68, 82, null],
-    [8, null, 22, 36, null, 51, null, 88, null],
-    [null, 10, null, 30, 42, 60, 71, null, 83],
-    [4, null, 23, null, 50, null, 65, 86, null],
-    [null, 12, null, 34, null, null, 77, 90, null],
-    [1, null, 38, null, 62, null, 73, null, 80],
-    [null, 17, null, null, 64, 66, 74, null, 89]
+    [null, 14, 28, null, null, 50, null, 75, 90],
+    [null, 19, null, 31, 49, null, 68, null, 81],
+    [5, null, 20, null, 47, null, null, 77, 84],
+    [null, 12, null, 38, null, 55, 69, null, 89],
+    [1, null, null, 36, 41, null, 66, 71, null],
+    [null, 18, 26, null, null, 57, null, 70, 88],
+    [8, null, 25, 33, null, 52, 62, null, null],
+    [9, null, null, 35, 46, null, 60, 73, null],
+    [null, 10, 27, null, 48, 59, null, null, 86]
   ]
 };
 
 // Template Pair 3
 const template3A: LoToCard = {
   id: 'template-3A',
-  backgroundColor: '#6a1b9a', // Dark purple
+  backgroundColor: '#015c2e', // Dark green
   grid: [
-    [3, 15, null, 36, null, 51, null, 82, null],
-    [null, 10, 28, null, 46, null, 74, 88, null],
-    [7, null, null, 33, 42, 59, null, 85, null],
-    [null, 19, 26, null, 48, 54, 63, null, 80],
-    [1, null, 24, 37, null, null, 79, null, 90],
-    [null, 11, null, 31, 49, 56, 61, null, 89],
-    [8, null, 20, null, 44, 58, null, 83, null],
-    [null, 14, 25, 39, null, 55, 65, null, 81],
-    [5, 17, null, null, 47, null, 68, 86, null]
+    [5, null, 29, 30, null, 56, null, null, 80],
+    [null, 10, null, 35, null, 54, 63, null, 81],
+    [4, null, 26, null, 45, null, 61, 79, null],
+    [3, 14, null, null, 43, 50, null, 71, null],
+    [7, null, 23, 31, null, 52, null, 73, null],
+    [null, 11, 28, null, 49, null, 69, null, 89],
+    [null, null, 24, 34, null, 53, 67, null, 85],
+    [null, null, 27, null, 40, 57, null, 76, 87],
+    [1, 16, null, 33, null, null, 65, 78, null]
   ]
 };
 
 const template3B: LoToCard = {
   id: 'template-3B',
-  backgroundColor: '#6a1b9a', // Dark purple
+  backgroundColor: '#015c2e', // Dark green
   grid: [
-    [null, 12, 22, null, 43, 57, null, 81, null],
-    [9, null, null, 30, 40, 53, 70, null, 82],
-    [null, 16, 29, null, 45, null, 64, 80, null],
-    [2, null, 21, 34, null, 52, null, 87, null],
-    [null, 13, null, 32, 41, 60, 67, null, 78],
-    [6, null, 27, null, 50, null, 73, 84, null],
-    [null, 18, null, 35, null, null, 71, 89, null],
-    [4, null, 23, null, 62, null, 69, null, 76],
-    [null, null, 38, null, 66, 72, 75, 77, null]
+    [null, 19, null, 32, null, 58, 64, null, 84],
+    [null, 13, 20, null, 48, 55, null, 77, null],
+    [2, null, 21, null, 46, null, null, 75, 82],
+    [6, 18, null, 39, null, null, 62, 70, null],
+    [null, null, 25, null, 41, 59, null, 74, 83],
+    [null, 17, null, 38, 44, null, 60, null, 86],
+    [8, null, 22, null, 47, null, 66, 72, null],
+    [9, 12, null, 37, 42, null, null, null, 88],
+    [null, 15, null, 36, null, 51, 68, null, 90]
   ]
 };
 
