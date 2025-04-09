@@ -1,17 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import confetti from 'canvas-confetti';
 import { useGame } from '@/context/GameContext';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from './ui/dialog';
+import confetti from 'canvas-confetti';
+import { useEffect, useState } from 'react';
+import { Dialog, DialogContent, DialogFooter } from './ui/dialog';
 
 interface VictoryScreenProps {
   winner: string;

@@ -4,7 +4,6 @@ import { useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Room } from '@/components/Room';
 import { useGame } from '@/context/GameContext';
-import { joinRoomAction } from '../../../actions/room';
 
 export default function RoomPage() {
   const params = useParams();
@@ -23,8 +22,7 @@ export default function RoomPage() {
   useEffect(() => {
     const attemptJoinRoom = async () => {
       if (!gameState.room && roomCode && nickname) {
-        const { success, room } = await joinRoom(roomCode, nickname);
-        console.log('🚀 ~ attemptJoinRoom ~ success:', success);
+        const success = await joinRoom(roomCode, nickname);
         if (!success) {
           // Room not found, redirect to home page
           router.push('/');

@@ -2,7 +2,6 @@
 
 import { prisma } from '@/lib/prisma';
 import { generateRoomCode } from '@/lib/game-utils';
-import { getRandomCardTemplate } from '@/lib/card-template';
 import { Player, RoomStatus } from '@prisma/client';
 import { handleApiResponse } from '../lib/utils';
 import { Room } from '@/types';

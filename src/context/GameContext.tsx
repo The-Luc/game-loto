@@ -95,13 +95,21 @@ export function GameProvider({ children }: { children: ReactNode }) {
       payload => {
         console.log('🚀 ~ useEffect ~ payload:', payload);
         if (payload.number) {
-          setGameState(prevState => ({
-            ...prevState,
-            room: {
+          setGameState(prevState => {
+            // Make sure room exists before updating
+            if (!prevState.room) return prevState;
+            
+            // Create a properly typed updated room object
+            const updatedRoom = {
               ...prevState.room,
-              calledNumbers: [...(prevState.room?.calledNumbers || []), payload.number],
-            },
-          }));
+              calledNumbers: [...(prevState.room.calledNumbers || []), payload.number as number]
+            };
+            
+            return {
+              ...prevState,
+              room: updatedRoom
+            };
+          });
         }
       }
     );
@@ -116,16 +124,24 @@ export function GameProvider({ children }: { children: ReactNode }) {
         if (payload?.playerId && typeof payload.playerId === 'string') {
           const playerId = payload.playerId;
           const cardId = payload.cardId as string;
-          setGameState(prevState => ({
-            ...prevState,
-            readyPlayerIds: [...(prevState.readyPlayerIds || []), playerId],
-            room: {
+          setGameState(prevState => {
+            // Make sure room exists before updating
+            if (!prevState.room) return prevState;
+            
+            // Create a properly typed updated room object
+            const updatedRoom = {
               ...prevState.room,
-              players: (prevState.room?.players || []).map(p =>
+              players: (prevState.room.players || []).map(p =>
                 p.id === playerId ? { ...p, cardId } : p
-              ),
-            },
-          }));
+              )
+            };
+            
+            return {
+              ...prevState,
+              readyPlayerIds: [...(prevState.readyPlayerIds || []), playerId],
+              room: updatedRoom
+            };
+          });
         }
       }
     );
@@ -164,13 +180,21 @@ export function GameProvider({ children }: { children: ReactNode }) {
           setIsAutoCallingActive(false);
         }
 
-        setGameState(prevState => ({
-          ...prevState,
-          room: {
+        setGameState(prevState => {
+          // Make sure room exists before updating
+          if (!prevState.room) return prevState;
+          
+          // Use a properly typed room object
+          const updatedRoom = {
             ...prevState.room,
-            winnerId: payload.playerId,
-          },
-        }));
+            winnerId: payload.playerId as string
+          };
+          
+          return {
+            ...prevState,
+            room: updatedRoom
+          };
+        });
       }
     );
     if (winnerDeclaredUnsub) unsubscribers.push(winnerDeclaredUnsub);
