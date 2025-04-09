@@ -107,7 +107,7 @@ export function LoToCard({
                           backgroundColor: cell ? '#E5E7EB' : card?.backgroundColor,
                         }}
                         className={`
-                      aspect-3/3 flex items-center justify-center text-[4vmin] md:text-[1.6vmin] lg:text-[2.1vmin] font-bold 
+                      aspect-3/3 flex items-center justify-center text-[5vmin] md:text-[1.6vmin] lg:text-[2.1vmin] font-bold font-oswald
                       ${playable && cell ? 'cursor-pointer' : ''}
                       ${
                         playable && selectedNumbers.includes(cell || 0)
