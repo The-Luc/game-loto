@@ -53,8 +53,8 @@ export function LandingPage() {
       return;
     }
 
-    if (!roomCode || roomCode.length !== 6) {
-      setError('Please enter a valid 6-digit room code');
+    if (!roomCode) {
+      setError('Please enter a room code');
       return;
     }
 
@@ -104,10 +104,9 @@ export function LandingPage() {
               </label>
               <Input
                 id="roomCode"
-                placeholder="Enter 6-digit room code"
+                placeholder="Enter room code"
                 value={roomCode}
                 onChange={e => setRoomCode(e.target.value.toUpperCase())}
-                maxLength={6}
               />
             </div>
 
@@ -116,7 +115,11 @@ export function LandingPage() {
                 {isLoading ? 'Joining...' : 'Join Room'}
               </Button>
 
-              <Button variant="outline" onClick={() => setIsJoining(false)} disabled={isLoading}>
+              <Button
+                variant="outline"
+                onClick={() => setIsJoining(false)}
+                disabled={isLoading}
+              >
                 Back
               </Button>
             </div>
@@ -127,7 +130,11 @@ export function LandingPage() {
               {isLoading ? 'Creating...' : 'Create New Room'}
             </Button>
 
-            <Button variant="outline" onClick={() => setIsJoining(true)} disabled={isLoading}>
+            <Button
+              variant="outline"
+              onClick={() => setIsJoining(true)}
+              disabled={isLoading}
+            >
               Join Existing Room
             </Button>
           </div>

@@ -4,8 +4,8 @@ import { useEffect, useState } from 'react';
 import { useGameStore, GameState } from '@/stores/useGameStore';
 import { cardTemplates } from '../lib/card-template';
 import { VictoryScreen } from './VictoryScreen';
+import { selectCardAction } from '@/server/actions/player';
 // TODO: Implement later
-// import { selectCardAction } from '@/server/actions/player';
 // import { declareWinnerAction } from '@/server/actions/room';
 
 interface LoToCardProps {
@@ -24,6 +24,7 @@ export function LoToCard({
   const playersInRoom = useGameStore((state: GameState) => state.playersInRoom);
   const currentCalledNumbers = useGameStore((state: GameState) => state.calledNumbers);
   const currentWinner = useGameStore((state: GameState) => state.winner);
+  const setPlayer = useGameStore((state: GameState) => state.setPlayer);
 
   const [selectedNumbers, setSelectedNumbers] = useState<number[]>([]);
   const [cardSet, setCardSet] = useState<Set<number>[]>([]);
@@ -54,15 +55,25 @@ export function LoToCard({
     return player?.nickname || 'Unknown';
   };
 
+  const handleSelectCard = async () => {
+    if (!card || !currentPlayer || !selectable) return;
+    try {
+      setPlayer({ ...currentPlayer, cardId: cardId });
+      const response = await selectCardAction(currentPlayer.id, cardId);
+      if (!response.success) {
+        console.error('Card selection failed:', response.error);
+      }
+    } catch (error) {
+      console.error('Failed to select card:', error);
+    }
+  };
+
   const handleCellClick = async (number: number | null) => {
     if (selectable) {
-      if (!card || !currentPlayer) return;
-      try {
-        // await selectCardAction(currentPlayer.id, cardId);
-      } catch (error) {
-        console.error('Failed to select card:', error);
-      }
-    } else if (playable && number && !hasWon && currentPlayer && room) {
+      return handleSelectCard();
+    }
+
+    if (playable && number && !hasWon && currentPlayer && room) {
       if (!selectedNumbers.includes(number) && currentCalledNumbers.includes(number)) {
         setSelectedNumbers([...selectedNumbers, number]);
 
@@ -96,6 +107,7 @@ export function LoToCard({
       {hasWon && <VictoryScreen />}
 
       <div
+        onClick={() => handleSelectCard()}
         className={`border-2 rounded-lg p-2 relative bg-black/80 ${
           selectable ? 'cursor-pointer hover:border-blue-500' : ''
         } ${currentPlayerCardId === cardId && selectable ? 'border-blue-500' : ''}`}

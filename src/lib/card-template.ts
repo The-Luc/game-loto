@@ -1,20 +1,22 @@
-import { LoToCard } from '../types';
+import { LoToCard } from './types';
 
 /**
- * Card templates for Lô Tô game
- * Each template pair (A and B) has complementary numbers which means 
- * for any given number, it only appears in one of the templates
- * and the same background color each pair of templates
- * Numbers are organized by columns:
- * - Column 1: 1-9
- * - Column 2: 10-19
- * - Column 3: 20-29
- * - Column 4: 30-39
- * - Column 5: 40-49
- * - Column 6: 50-59
- * - Column 7: 60-69
- * - Column 8: 70-79
- * - Column 9: 80-90
+ * Card templates for traditional Vietnamese Lô Tô game
+ * Each template follows the authentic Vietnamese Lô Tô rules:
+ * - 45 numbers arranged in 9 rows of 5 numbers each (with 4 blank cells per row)
+ * - Numbers range from 1-90
+ * - Numbers are organized by columns:
+ *   - Column 1: 1-9
+ *   - Column 2: 10-19
+ *   - Column 3: 20-29
+ *   - Column 4: 30-39
+ *   - Column 5: 40-49
+ *   - Column 6: 50-59
+ *   - Column 7: 60-69
+ *   - Column 8: 70-79
+ *   - Column 9: 80-90
+ * - Each column must have at least one number in each card
+ * - Each card has a unique set of numbers
  */
 
 // Template Pair 1
