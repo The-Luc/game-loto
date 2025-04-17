@@ -1,29 +1,50 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useGame } from '@/context/GameContext';
+import { useGameStore, GameState } from '@/stores/useGameStore';
 import { PlayerList } from '@/components/PlayerList';
 import { CardSelection } from '@/components/CardSelection';
 import { LoToCard } from '@/components/LoToCard';
 import { NumberCaller } from '@/components/NumberCaller';
 import { Button } from '@/components/ui/button';
 import { RoomStatus } from '@prisma/client';
+import { leaveRoomAction, updateRoomStatusAction } from '@/server/actions/room';
 
 export function Room() {
-  const { gameState, leaveRoom, startGame } = useGame();
+  const room = useGameStore((state: GameState) => state.room);
+  const player = useGameStore((state: GameState) => state.player);
 
-  const { room, player } = gameState;
+  const handleLeaveRoom = async () => {
+    if (room && player) {
+      try {
+        await leaveRoomAction(room.id, player.id);
+      } catch (error) {
+        console.error('Failed to leave room:', error);
+        useGameStore.getState().setGameError('Failed to leave room');
+      }
+    }
+  };
 
-  // Redirect if no room or player
+  const handleStartGame = async () => {
+    if (room && player?.isHost) {
+      try {
+        await updateRoomStatusAction(room.id, RoomStatus.playing);
+      } catch (error) {
+        console.error('Failed to start game:', error);
+        useGameStore.getState().setGameError('Failed to start game');
+      }
+    }
+  };
+
   useEffect(() => {
     if (!room || !player) {
-      // In a real app, we would redirect to the home page
-      // For now, we'll just log a message
-      console.log('No room or player found');
+      console.log('No room or player found, potentially redirecting...');
     }
   }, [room, player]);
 
-  if (!room || !player) return null;
+  if (!room || !player) {
+    return <div>Loading room details...</div>;
+  }
 
   const isHost = player.isHost;
   const isWaiting = room.status === RoomStatus.waiting;
@@ -33,18 +54,16 @@ export function Room() {
     <div className="container mx-auto p-4">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Room: {room.code}</h1>
-        <Button variant="outline" onClick={leaveRoom}>
+        <Button variant="outline" onClick={handleLeaveRoom}>
           Leave Room
         </Button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Left column - Player list */}
         <div>
           <PlayerList />
         </div>
 
-        {/* Middle column - Game area */}
         <div className="md:col-span-2">
           {isWaiting && isHost && (
             <div className="bg-white rounded-lg shadow p-4 mb-4">
@@ -52,7 +71,7 @@ export function Room() {
                 Share this code with your friends:{' '}
                 <span className="font-bold">{room.code}</span>
               </p>
-              <Button onClick={startGame}>Start Game</Button>
+              <Button onClick={handleStartGame}>Start Game</Button>
             </div>
           )}
 

@@ -1,23 +1,22 @@
 'use client';
 
-import { useGame } from '@/context/GameContext';
+import { useGameStore, GameState } from '@/stores/useGameStore'; 
 import { Button } from '@/components/ui/button';
-import { Badge } from './ui/badge';
+import { Player } from '@prisma/client'; 
 
 export function PlayerList() {
-  const { gameState, kickPlayer } = useGame();
-  const { room, player } = gameState;
+  const playersInRoom = useGameStore((state: GameState) => state.playersInRoom);
+  const currentPlayer = useGameStore((state: GameState) => state.player); 
 
-  if (!room || !player) return null;
+  if (!currentPlayer) return null;
 
-  const isHost = player.isHost;
-  const readyPlayerIds = gameState.readyPlayerIds || [];
+  const isHost = currentPlayer.isHost;
 
   return (
     <div className="bg-white rounded-lg shadow p-4">
-      <h2 className="text-xl font-bold mb-4">Players</h2>
+      <h2 className="text-xl font-bold mb-4">Players ({playersInRoom.length})</h2>
       <ul className="space-y-2">
-        {room?.players?.map(p => (
+        {playersInRoom.map((p: Player) => (
           <li key={p.id} className="flex items-center justify-between p-2 border-b">
             <div className="flex items-center">
               <span className="font-medium">{p.nickname}</span>
@@ -26,20 +25,15 @@ export function PlayerList() {
                   Host
                 </span>
               )}
-              {p.id === player.id && (
+              {p.id === currentPlayer.id && (
                 <span className="ml-2 text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
                   You
                 </span>
               )}
             </div>
-            {readyPlayerIds.includes(p.id) && (
-              <Badge variant="outline" className="ml-2">
-                Ready
-              </Badge>
-            )}
 
-            {false && isHost && p.id !== player?.id && (
-              <Button variant="destructive" size="sm" onClick={() => kickPlayer(p.id)}>
+            {false && isHost && p.id !== currentPlayer?.id && (
+              <Button variant="destructive" size="sm" /* onClick={() => kickPlayer(p.id)} */ >
                 Kick
               </Button>
             )}

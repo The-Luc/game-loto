@@ -1,54 +1,81 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useGame } from '@/context/GameContext';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { useGameStore } from '@/stores/useGameStore';
+import { createRoomAction, joinRoomAction } from '../server/actions/room';
 
 export function LandingPage() {
   const router = useRouter();
-  const { nickname, setNickname, createRoom, joinRoom } = useGame();
+  const { player, setPlayer, setRoom } = useGameStore();
   const [roomCode, setRoomCode] = useState('');
   const [error, setError] = useState('');
   const [isJoining, setIsJoining] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [localNickname, setLocalNickname] = useState('');
+
+  useEffect(() => {
+    setLocalNickname(player?.nickname || '');
+  }, [player?.nickname]);
 
   const handleCreateRoom = async () => {
-    if (!nickname) {
+    if (!localNickname) {
       setError('Please enter a nickname');
       return;
     }
 
-    try {
-      const code = await createRoom();
-      if (!code) return;
+    setIsLoading(true);
+    setError('');
 
-      router.push(`/room/${code}`);
-    } catch {
-      setError('Failed to create room');
+    try {
+      const response = await createRoomAction(localNickname);
+
+      if (response.success && response.room && response.player) {
+        setPlayer({ ...response.player, cardId: response.player.cardId || '' });
+        setRoom(response.room);
+        router.push(`/room/${response.room.code}`);
+      } else {
+        setError(response.error || 'Failed to create room');
+      }
+    } catch (err) {
+      console.error('Create room error:', err);
+      setError('An unexpected error occurred while creating the room.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleJoinRoom = async () => {
-    if (!nickname) {
+    if (!localNickname) {
       setError('Please enter a nickname');
       return;
     }
 
-    if (!roomCode) {
-      setError('Please enter a room code');
+    if (!roomCode || roomCode.length !== 6) {
+      setError('Please enter a valid 6-digit room code');
       return;
     }
 
+    setIsLoading(true);
+    setError('');
+
     try {
-      const success = await joinRoom(roomCode, nickname);
-      if (success) {
+      const response = await joinRoomAction(roomCode, localNickname);
+
+      if (response.success && response.room && response.player) {
+        setPlayer({ ...response.player, cardId: response.player.cardId || '' });
+        setRoom(response.room);
         router.push(`/room/${roomCode}`);
       } else {
-        setError('Room not found');
+        setError(response.error || 'Failed to join room');
       }
-    } catch {
-      setError('Failed to join room');
+    } catch (err) {
+      console.error('Join room error:', err);
+      setError('An unexpected error occurred while joining the room.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -64,8 +91,8 @@ export function LandingPage() {
           <Input
             id="nickname"
             placeholder="Enter your nickname"
-            value={nickname}
-            onChange={e => setNickname(e.target.value)}
+            value={localNickname}
+            onChange={e => setLocalNickname(e.target.value)}
           />
         </div>
 
@@ -85,18 +112,22 @@ export function LandingPage() {
             </div>
 
             <div className="flex flex-col space-y-4">
-              <Button onClick={handleJoinRoom}>Join Room</Button>
+              <Button onClick={handleJoinRoom} disabled={isLoading}>
+                {isLoading ? 'Joining...' : 'Join Room'}
+              </Button>
 
-              <Button variant="outline" onClick={() => setIsJoining(false)}>
+              <Button variant="outline" onClick={() => setIsJoining(false)} disabled={isLoading}>
                 Back
               </Button>
             </div>
           </>
         ) : (
           <div className="flex flex-col space-y-4">
-            <Button onClick={handleCreateRoom}>Create New Room</Button>
+            <Button onClick={handleCreateRoom} disabled={isLoading}>
+              {isLoading ? 'Creating...' : 'Create New Room'}
+            </Button>
 
-            <Button variant="outline" onClick={() => setIsJoining(true)}>
+            <Button variant="outline" onClick={() => setIsJoining(true)} disabled={isLoading}>
               Join Existing Room
             </Button>
           </div>

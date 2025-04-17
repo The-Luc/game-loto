@@ -1,9 +1,12 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useGame } from '@/context/GameContext';
+import { useGameStore, GameState } from '@/stores/useGameStore';
 import { cardTemplates } from '../lib/card-template';
 import { VictoryScreen } from './VictoryScreen';
+// TODO: Implement later
+// import { selectCardAction } from '@/server/actions/player';
+// import { declareWinnerAction } from '@/server/actions/room';
 
 interface LoToCardProps {
   cardId: string;
@@ -16,75 +19,71 @@ export function LoToCard({
   selectable = false,
   playable = false,
 }: LoToCardProps) {
-  const { gameState, selectCard, declareWinner } = useGame();
+  const room = useGameStore((state: GameState) => state.room);
+  const currentPlayer = useGameStore((state: GameState) => state.player);
+  const playersInRoom = useGameStore((state: GameState) => state.playersInRoom);
+  const currentCalledNumbers = useGameStore((state: GameState) => state.calledNumbers);
+  const currentWinner = useGameStore((state: GameState) => state.winner);
+
   const [selectedNumbers, setSelectedNumbers] = useState<number[]>([]);
   const [cardSet, setCardSet] = useState<Set<number>[]>([]);
 
-  const card = cardTemplates.find(card => card.id === cardId);
-  const player = gameState.player;
-  const currPlayerCardId = player?.cardId;
-  const players = gameState.room?.players;
-  const selectedCardIds = players?.map(p => p.cardId);
-  const calledNumbers = gameState.room?.calledNumbers || [];
-  const winnerId = gameState.room?.winnerId;
-  const hasWon = !!winnerId;
-
-  let winner = null;
-
-  if (winnerId) {
-    winner = players?.find(p => p.id === winnerId)?.nickname || 'Unknown';
-    if (winner === player?.nickname) {
-      winner = 'You';
-    }
-  }
+  const card = cardTemplates.find(c => c.id === cardId);
+  const currentPlayerCardId = currentPlayer?.cardId;
+  const selectedCardIds = playersInRoom?.map(p => p.cardId);
+  const hasWon = !!currentWinner;
 
   useEffect(() => {
-    if (!winnerId) {
+    if (!currentWinner) {
       setSelectedNumbers([]);
     }
-  }, [winnerId]);
+  }, [currentWinner]);
 
   useEffect(() => {
     if (!card) return;
-    const grid = card.grid.map(row => new Set(row.filter(cell => cell !== null)));
+    const grid = card.grid.map(
+      (row: (number | null)[]) =>
+        new Set(row.filter((cell: number | null): cell is number => cell !== null))
+    );
     setCardSet(grid);
   }, [card]);
 
-  const getPlayerName = (cardId: string) => {
-    const player = players?.find(p => p.cardId === cardId);
-    if (player?.id === gameState.player?.id) return 'You';
+  const getPlayerName = (cId: string) => {
+    const player = playersInRoom?.find(p => p.cardId === cId);
+    if (player?.id === currentPlayer?.id) return 'You';
     return player?.nickname || 'Unknown';
   };
 
   const handleCellClick = async (number: number | null) => {
     if (selectable) {
-      // In selection mode, clicking selects the entire card
-      if (!card) return;
-      await selectCard(cardId);
-    } else if (playable && number && !hasWon) {
-      // In play mode, clicking marks individual numbers
-      if (!selectedNumbers.includes(number) && calledNumbers.includes(number)) {
+      if (!card || !currentPlayer) return;
+      try {
+        // await selectCardAction(currentPlayer.id, cardId);
+      } catch (error) {
+        console.error('Failed to select card:', error);
+      }
+    } else if (playable && number && !hasWon && currentPlayer && room) {
+      if (!selectedNumbers.includes(number) && currentCalledNumbers.includes(number)) {
         setSelectedNumbers([...selectedNumbers, number]);
-        const hasWon = checkWinning(number);
 
-        if (hasWon) {
-          // player has won
-          declareWinner(player?.id || '');
+        const playerHasWon = checkWinning(number);
+
+        if (playerHasWon) {
+          try {
+            // await declareWinnerAction(room.id, currentPlayer.id);
+          } catch (error) {
+            console.error('Failed to declare winner:', error);
+          }
         }
       }
     }
   };
 
-  // Check if the player has won, if they have a row of 5 numbers
-  const checkWinning = (number: number) => {
-    // find the item in the set and remove it
+  const checkWinning = (number: number): boolean => {
     for (const row of cardSet) {
       if (!row.has(number)) continue;
       row.delete(number);
-
-      // check if the row is empty
       if (row.size === 0) {
-        // player has won
         return true;
       }
       break;
@@ -94,16 +93,15 @@ export function LoToCard({
 
   return (
     <>
-      {/* {hasWon && <VictoryScreen winner={winner || ''} />} */}
-      <VictoryScreen winner={winner || ''} />
+      {hasWon && <VictoryScreen />}
 
       <div
         className={`border-2 rounded-lg p-2 relative bg-black/80 ${
           selectable ? 'cursor-pointer hover:border-blue-500' : ''
-        } ${currPlayerCardId === cardId && selectable ? 'border-blue-500' : ''}`}
+        } ${currentPlayerCardId === cardId && selectable ? 'border-blue-500' : ''}`}
+        style={{ pointerEvents: hasWon && !selectable ? 'none' : 'auto' }}
       >
         <div className="flex flex-col">
-          {/* Group rows in sets of 3 */}
           {[0, 1, 2].map(groupIndex => (
             <div
               key={`group-${groupIndex}`}
@@ -111,9 +109,12 @@ export function LoToCard({
             >
               {card?.grid
                 .slice(groupIndex * 3, groupIndex * 3 + 3)
-                .map((row, rowIndexInGroup) =>
-                  row.map((cell, colIndex) => {
+                .map((row: (number | null)[], rowIndexInGroup: number) =>
+                  row.map((cell: number | null, colIndex: number) => {
                     const rowIndex = groupIndex * 3 + rowIndexInGroup;
+                    const isCalled = cell !== null && currentCalledNumbers.includes(cell);
+                    const isSelected = cell !== null && selectedNumbers.includes(cell);
+
                     return (
                       <div
                         key={`${rowIndex}-${colIndex}`}
@@ -122,14 +123,15 @@ export function LoToCard({
                           backgroundColor: cell ? '#E5E7EB' : card?.backgroundColor,
                         }}
                         className={`
-                      aspect-3/3 flex items-center justify-center text-[5vmin] md:text-[1.6vmin] lg:text-[2.1vmin] font-bold font-oswald
-                      ${playable && cell ? 'cursor-pointer' : ''}
-                      ${
-                        playable && selectedNumbers.includes(cell || 0)
-                          ? 'bg-green-300! border-green-600! border-2!'
-                          : ''
-                      }
-                    `}
+                          aspect-3/3 flex items-center justify-center text-[5vmin] md:text-[1.6vmin] lg:text-[2.1vmin] font-bold font-oswald
+                          ${playable && cell ? 'cursor-pointer' : ''}
+                          ${
+                            isSelected && isCalled
+                              ? 'bg-green-300! border-green-600! border-2!'
+                              : ''
+                          }
+                          ${!isSelected && isCalled ? 'opacity-50' : ''}
+                        `}
                       >
                         {cell || ''}
                       </div>
@@ -139,17 +141,18 @@ export function LoToCard({
             </div>
           ))}
         </div>
-        {selectable && selectedCardIds?.includes(cardId) && (
-          <>
-            {/* Overlay */}
-            <div className="absolute top-0 left-0 w-full h-full bg-gray-500 opacity-50 cursor-not-allowed pointer-events-none rounded-lg"></div>
-            <div className="absolute top-0 left-0 w-full h-full">
-              <div className="flex items-center justify-center h-full text-green-300 opacity-100 text-4xl font-bold ">
-                {getPlayerName(cardId)}
+        {selectable &&
+          selectedCardIds?.includes(cardId) &&
+          currentPlayerCardId !== cardId && (
+            <>
+              <div className="absolute top-0 left-0 w-full h-full bg-gray-500 opacity-50 cursor-not-allowed pointer-events-none rounded-lg"></div>
+              <div className="absolute top-0 left-0 w-full h-full">
+                <div className="flex items-center justify-center h-full text-green-300 opacity-100 text-4xl font-bold ">
+                  {getPlayerName(cardId)}
+                </div>
               </div>
-            </div>
-          </>
-        )}
+            </>
+          )}
       </div>
     </>
   );

@@ -2,45 +2,39 @@
 
 import { useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Room } from '@/components/Room';
-import { useGame } from '@/context/GameContext';
+import { Room as RoomComponent } from '@/components/Room'; 
+import { useGameStore } from '@/stores/useGameStore'; 
 
 export default function RoomPage() {
   const params = useParams();
   const router = useRouter();
-  const { gameState, nickname, joinRoom } = useGame();
+  const { room, player } = useGameStore();
   const roomCode = params.code as string;
 
-  // If no nickname is set, redirect to home page
   useEffect(() => {
-    if (!nickname) {
+    if (!player) {
+      console.log('No player data found in store, redirecting to home.');
       router.push('/');
     }
-  }, [nickname, router]);
+  }, [player, router, roomCode, room]); 
 
-  // If not in a room and we have a room code, try to join it
-  useEffect(() => {
-    const attemptJoinRoom = async () => {
-      if (!gameState.room && roomCode && nickname) {
-        const success = await joinRoom(roomCode, nickname);
-        if (!success) {
-          // Room not found, redirect to home page
-          router.push('/');
-        }
-      }
-    };
-
-    attemptJoinRoom();
-  }, [gameState.room, roomCode, nickname, joinRoom, router]);
-
-  // If no room in state, show loading
-  if (!gameState.room) {
+  if (!room) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <p className="text-xl">Loading room...</p>
+        <p className="text-xl">Loading room data...</p>
       </div>
     );
   }
 
-  return <Room />;
+  if (room.code !== roomCode) {
+    console.log(`Room code mismatch: URL (${roomCode}) vs Store (${room.code}). Redirecting.`);
+    router.push('/');
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <p className="text-xl">Redirecting...</p>
+      </div>
+    );
+  }
+
+  return <RoomComponent />; 
 }
