@@ -51,23 +51,23 @@ export function CardSelection() {
   return (
     <div className="p-4 max-w-7xl mx-auto">
       <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
-        <h2 className="text-2xl font-bold text-center mb-2">Select Your Card</h2>
+        <h2 className="text-2xl font-bold text-center mb-2">Chọn bảng Của Bạn</h2>
         <p className="text-center text-gray-600 mb-6">
-          Choose one of the following cards to play with. Each player must select a unique card.
+          Chọn một trong những bảng sau để chơi.
         </p>
         
         {isHost && (
           <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-            <h3 className="font-semibold text-blue-700 mb-2">Host Controls</h3>
+            <h3 className="font-semibold text-blue-700 mb-2">Bạn là chủ xị</h3>
             <p className="text-sm text-blue-600 mb-3">
-              As the host, you can start the game once all players have selected their cards.
+              Bạn có thể bắt đầu trò chơi khi tất cả các người chơi đã chọn một bảng.
             </p>
             <Button 
               onClick={startGame} 
               disabled={!allPlayersReady}
               className="w-full sm:w-auto"
             >
-              {allPlayersReady ? 'Start Game' : 'Waiting for all players to select cards...'}
+              {allPlayersReady ? 'Bắt đầu trò chơi' : 'Đang chờ tất cả các người chơi chọn bảng...'}
             </Button>
           </div>
         )}
@@ -87,7 +87,7 @@ export function CardSelection() {
                 
                 {isSelected && (
                   <div className="absolute top-2 left-2 bg-blue-500 text-white px-2 py-1 rounded-md text-xs font-bold">
-                    Selected
+                    Chọn
                   </div>
                 )}
               </div>

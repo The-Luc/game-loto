@@ -106,9 +106,9 @@ export function Room() {
   return (
     <div className="container mx-auto p-4">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Room: {room.code}</h1>
+        <h1 className="text-2xl font-bold">Mã phòng: {room.code}</h1>
         <Button variant="outline" onClick={handleLeaveRoom}>
-          Leave Room
+          Thoát
         </Button>
       </div>
 
@@ -121,17 +121,17 @@ export function Room() {
           {isWaiting && isHost && (
             <div className="bg-white rounded-lg shadow p-4 mb-4">
               <p className="mb-4">
-                Share this code with your friends:{' '}
+                Chia sẻ mã phòng với bạn bè:{' '}
                 <span className="font-bold">{room.code}</span>
               </p>
-              <Button onClick={handleStartGame}>Start Game</Button>
+              <Button onClick={handleStartGame}>Bắt đầu trò chơi</Button>
             </div>
           )}
 
           {isWaiting && !isHost && (
             <div className="bg-white rounded-lg shadow p-4 mb-4">
-              <h2 className="text-xl font-bold mb-4">Waiting for Host</h2>
-              <p>The host will start the game when everyone is ready.</p>
+              <h2 className="text-xl font-bold mb-4">Chờ chủ xị</h2>
+              <p>Chủ xị sẽ bắt đầu trò chơi khi tất cả mọi người đã chọn bảng.</p>
             </div>
           )}
 
@@ -139,7 +139,7 @@ export function Room() {
 
           {isPlaying && player.cardId && (
             <div className="bg-white rounded-lg shadow p-4 mb-4">
-              <h2 className="text-xl font-bold mb-4">Your Card</h2>
+              <h2 className="text-xl font-bold mb-4">Bảng Của Bạn</h2>
               <LoToCard cardId={player.cardId} playable={true} />
             </div>
           )}

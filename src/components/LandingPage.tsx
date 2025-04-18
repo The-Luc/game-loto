@@ -82,15 +82,16 @@ export function LandingPage() {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-gradient-to-b from-blue-50 to-purple-50">
       <div className="w-full max-w-md bg-white rounded-lg shadow-lg p-6">
-        <h1 className="text-3xl font-bold text-center mb-6">Lô Tô Game</h1>
+        <h1 className="text-3xl font-bold text-center ">Lô Tô</h1>
+        <h6 className="text-sm text-center mb-6 text-gray-700">Cờ ra con mấy con mấy cờ ra</h6>
 
         <div className="mb-6">
           <label className="block text-sm font-medium mb-2" htmlFor="nickname">
-            Your Nickname
+            Tên
           </label>
           <Input
             id="nickname"
-            placeholder="Enter your nickname"
+            placeholder="Nhập tên"
             value={localNickname}
             onChange={e => setLocalNickname(e.target.value)}
           />
@@ -100,11 +101,11 @@ export function LandingPage() {
           <>
             <div className="mb-6">
               <label className="block text-sm font-medium mb-2" htmlFor="roomCode">
-                Room Code
+                Mã Phòng
               </label>
               <Input
                 id="roomCode"
-                placeholder="Enter room code"
+                placeholder="Nhập mã phòng"
                 value={roomCode}
                 onChange={e => setRoomCode(e.target.value.toUpperCase())}
               />
@@ -112,7 +113,7 @@ export function LandingPage() {
 
             <div className="flex flex-col space-y-4">
               <Button onClick={handleJoinRoom} disabled={isLoading}>
-                {isLoading ? 'Joining...' : 'Join Room'}
+                {isLoading ? 'Đang tham gia...' : 'Tham gia phòng'}
               </Button>
 
               <Button
@@ -120,14 +121,14 @@ export function LandingPage() {
                 onClick={() => setIsJoining(false)}
                 disabled={isLoading}
               >
-                Back
+                Quay lại
               </Button>
             </div>
           </>
         ) : (
           <div className="flex flex-col space-y-4">
             <Button onClick={handleCreateRoom} disabled={isLoading}>
-              {isLoading ? 'Creating...' : 'Create New Room'}
+              {isLoading ? 'Đang tạo phòng...' : 'Tạo phòng mới'}
             </Button>
 
             <Button
@@ -135,7 +136,7 @@ export function LandingPage() {
               onClick={() => setIsJoining(true)}
               disabled={isLoading}
             >
-              Join Existing Room
+              Tham gia phòng
             </Button>
           </div>
         )}
