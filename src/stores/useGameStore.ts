@@ -1,6 +1,6 @@
 import { create } from 'zustand';
-import { Player } from '@prisma/client';
-import { Room, LoToCard } from '@/lib/types'; // Assuming LoToCard might be needed
+import { Player, Room } from '@prisma/client';
+import { LoToCard } from '@/lib/types'; // Assuming LoToCard might be needed
 
 // Export the interface
 export interface GameState {

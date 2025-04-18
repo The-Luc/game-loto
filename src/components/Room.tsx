@@ -8,7 +8,12 @@ import { LoToCard } from '@/components/LoToCard';
 import { NumberCaller } from '@/components/NumberCaller';
 import { Button } from '@/components/ui/button';
 import { RoomStatus } from '@prisma/client';
-import { leaveRoomAction, updateRoomStatusAction } from '@/server/actions/room';
+import {
+  leaveRoomAction,
+  updateRoomStatusAction,
+  getRoomWithPlayersAction,
+} from '@/server/actions/room';
+import { useRoomRealtime } from '@/lib/supabase-subscribe';
 
 export function Room() {
   const room = useGameStore((state: GameState) => state.room);
@@ -36,14 +41,62 @@ export function Room() {
     }
   };
 
+  // Initial room data fetch (remains the same, adjusted dependencies and logging)
   useEffect(() => {
     if (!room || !player) {
-      console.log('No room or player found, potentially redirecting...');
+      console.log('Room component: No room or player found, cannot fetch initial data.');
+      // Consider redirecting or showing an error state
+      return;
     }
-  }, [room, player]);
+
+    console.log('Room component: Fetching initial room data...');
+    const fetchInitialRoomData = async () => {
+      try {
+        if (!room?.id) {
+          console.error('Room component: Cannot fetch data without room ID.');
+          // Maybe set an error state here if appropriate
+          return;
+        }
+
+        const roomWithPlayers = await getRoomWithPlayersAction(room.id);
+
+        // Guard Clause: Check for failure or missing room data first
+        if (!roomWithPlayers.success || !roomWithPlayers.room) {
+          console.error(
+            'Room component: Failed to fetch initial room data - API error or missing room:',
+            roomWithPlayers.error || 'No room data returned'
+          );
+          useGameStore.getState().setGameError('Failed to load room details.');
+          return; // Exit early on failure
+        }
+
+        const currentStore = useGameStore.getState();
+
+        // Update players state
+        currentStore.setPlayersInRoom(roomWithPlayers.room.players || []);
+
+        // update room state
+        currentStore.setRoom(roomWithPlayers.room);
+      } catch (error) {
+        console.error(
+          'Room component: Failed to fetch initial room data - Network/unexpected error:',
+          error
+        );
+        useGameStore
+          .getState()
+          .setGameError('An unexpected error occurred while loading room details.');
+      }
+    };
+
+    fetchInitialRoomData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- Intentional: only refetch on ID change
+  }, [room?.id, player?.id]); // Reduced dependencies
+
+  // Use the custom hook to manage realtime subscriptions
+  useRoomRealtime(room?.id);
 
   if (!room || !player) {
-    return <div>Loading room details...</div>;
+    return <div className="container mx-auto p-4">Loading room details...</div>;
   }
 
   const isHost = player.isHost;

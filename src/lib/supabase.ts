@@ -1,5 +1,6 @@
 import { createClient, SupabaseClient, RealtimeChannel } from '@supabase/supabase-js';
-import { RealtimeEventEnum } from '../enum';
+import { RealtimeEventEnum } from './enums';
+import { BroadcastPayloadMap, FullBroadcastPayload } from '@/types/broadcast';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
@@ -12,13 +13,6 @@ const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     },
   },
 });
-
-
-export type GamePayload = {
-  roomId: string;
-  // Using a more specific type for additional properties
-  [key: string]: string | number | boolean | object | null | undefined;
-};
 
 // Store active channels to avoid creating duplicates
 const channels = new Map<string, RealtimeChannel>();
@@ -54,16 +48,19 @@ function getOrCreateChannel(roomId: string, presenceKey = '', client: SupabaseCl
  * @param callback Function to call when event is received
  * @returns A function to unsubscribe
  */
-export function subscribe(
+export function subscribe<E extends RealtimeEventEnum>(
   roomId: string,
-  event: RealtimeEventEnum,
-  callback: (payload: GamePayload) => void,
+  event: E,
+  callback: (payload: BroadcastPayloadMap[E]) => void,
   client: SupabaseClient = supabase
 ) {
   const channel = getOrCreateChannel(roomId, '', client);
 
-  const subscription = channel.on('broadcast', { event }, (payload) => {
-    callback(payload.payload as GamePayload);
+  const subscription = channel.on('broadcast', { event }, (message) => {
+    const fullPayload = message.payload as FullBroadcastPayload<E>;
+    const { roomId: _, ...eventPayload } = fullPayload;
+
+    callback(eventPayload as BroadcastPayloadMap[E]);
   });
 
   return () => {
@@ -78,22 +75,33 @@ export function subscribe(
  * @param payload The data to send
  * @returns Promise that resolves when broadcast is complete
  */
-export async function broadcast(
+export async function broadcast<E extends RealtimeEventEnum>(
   roomId: string,
-  event: RealtimeEventEnum,
-  payload: Omit<GamePayload, 'roomId'>,
+  event: E,
+  payload: BroadcastPayloadMap[E],
   client: SupabaseClient = supabase
 ) {
   const channel = getOrCreateChannel(roomId, '', client);
 
-  return channel.send({
-    type: 'broadcast',
-    event,
-    payload: {
-      roomId,
-      ...payload,
-    },
-  });
+  const fullPayload: FullBroadcastPayload<E> = {
+    roomId,
+    ...payload,
+  };
+
+  try {
+    const result = await channel.send({
+      type: 'broadcast',
+      event,
+      payload: fullPayload,
+    });
+    if (result !== 'ok') {
+      console.warn(`Supabase broadcast for event '${event}' to room '${roomId}' failed with status: ${result}`);
+    }
+    return result;
+  } catch (error) {
+    console.error(`Supabase broadcast error for event '${event}' to room '${roomId}':`, error);
+    throw error;
+  }
 }
 
 /**

@@ -32,11 +32,24 @@ export function PlayerList() {
               )}
             </div>
 
-            {false && isHost && p.id !== currentPlayer?.id && (
-              <Button variant="destructive" size="sm" /* onClick={() => kickPlayer(p.id)} */ >
-                Kick
-              </Button>
-            )}
+            <div className="flex items-center space-x-2">
+              {p.cardId ? (
+                <div className="text-xs font-medium text-green-600 flex items-center gap-1">
+                  <span className="h-2 w-2 rounded-full bg-green-500"></span>
+                  Ready
+                </div>
+              ) : (
+                <div className="text-xs font-medium text-gray-500 flex items-center gap-1">
+                  <span className="h-2 w-2 rounded-full bg-gray-400"></span>
+                  Selecting...
+                </div>
+              )}
+              {false && isHost && p.id !== currentPlayer?.id && (
+                <Button variant="destructive" size="sm" /* onClick={() => kickPlayer(p.id)} */ >
+                  Kick
+                </Button>
+              )}
+            </div>
           </li>
         ))}
       </ul>

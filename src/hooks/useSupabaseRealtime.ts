@@ -1,6 +1,6 @@
 import { useEffect, useCallback, useRef } from 'react';
 import { supabaseRealtime, GamePayload } from '@/lib/supabase';
-import { RealtimeEventEnum } from '../enum';
+import { RealtimeEventEnum } from '../lib/enums';
 
 type UnsubscribeFn = () => void;
 

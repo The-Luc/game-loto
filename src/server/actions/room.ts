@@ -5,6 +5,8 @@ import { generateRoomCode } from '@/lib/game-utils';
 import { Player, RoomStatus } from '@prisma/client';
 import { handleApiResponse } from '@/lib/utils';
 import { Room } from '@/lib/types';
+import { supabaseRealtime } from '@/lib/supabase';
+import { RealtimeEventEnum } from '@/lib/enums';
 
 type CreateRoomResponse = {
 	success: boolean;
@@ -67,6 +69,19 @@ export async function createRoomAction(nickname: string): Promise<CreateRoomResp
 			data: { hostId: player.id }
 		});
 
+		// Room creation doesn't need its own broadcast
+		// since the host player joining is broadcasted below
+
+		// Broadcast player-joined event for real-time updates
+		await supabaseRealtime.broadcast(room.id, RealtimeEventEnum.PLAYER_JOINED, {
+			player: {
+				id: player.id,
+				nickname: player.nickname,
+				isHost: player.isHost,
+				cardId: player.cardId
+			}
+		});
+
 		return {
 			success: true,
 			room: {
@@ -125,6 +140,16 @@ export async function joinRoomAction(roomCode: string, nickname: string): Promis
 			}
 		});
 
+		// Broadcast player joined event for real-time updates
+		await supabaseRealtime.broadcast(room.id, RealtimeEventEnum.PLAYER_JOINED, {
+			player: {
+				id: player.id,
+				nickname: player.nickname,
+				isHost: player.isHost,
+				cardId: player.cardId
+			}
+		});
+
 		return {
 			success: true,
 			room: {
@@ -169,6 +194,17 @@ export async function updateRoomStatusAction(roomId: string, status: RoomStatus)
 			data: { status }
 		});
 
+		// Broadcast event based on the new status
+		if (status === 'playing') {
+			await supabaseRealtime.broadcast(roomId, RealtimeEventEnum.GAME_STARTED, {
+				status: status
+			});
+		} else if (status === 'ended') {
+			await supabaseRealtime.broadcast(roomId, RealtimeEventEnum.GAME_ENDED, {
+				status: status
+			});
+		}
+
 		return { success: true };
 	} catch (error) {
 		console.error('Failed to update room status:', error);
@@ -183,9 +219,18 @@ export async function leaveRoomAction(roomId: string, playerId: string) {
 			where: { id: playerId }
 		});
 
-		// If no players left, delete the room
+		// Get room and player details before deletion for broadcasting
 		const room = await prisma.room.findUnique({ where: { id: roomId }, include: { players: true } });
+		const player = await prisma.player.findUnique({ where: { id: playerId } });
 		if (!room) return { success: true };
+
+		// Broadcast player left event for real-time updates (if player still exists)
+		if (player) {
+			await supabaseRealtime.broadcast(roomId, RealtimeEventEnum.PLAYER_LEFT, {
+				playerId: playerId,
+				nickname: player.nickname
+			});
+		}
 
 		if (room.players.length === 0) {
 			await prisma.room.delete({ where: { id: roomId } });

@@ -95,39 +95,6 @@ export function CardSelection() {
           })}
         </div>
       </div>
-      
-      <div className="bg-white rounded-lg shadow-lg p-6">
-        <h3 className="font-bold mb-3">Players</h3>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-          {playersInRoom?.map(p => (
-            <div 
-              key={p.id} 
-              className={`
-                p-3 rounded-lg border 
-                ${p.cardId ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200'}
-                ${p.id === player?.id ? 'border-blue-400' : ''}
-              `}
-            >
-              <div className="flex items-center gap-2">
-                <div className="font-medium">
-                  {p.nickname} {p.isHost && '(Host)'}
-                </div>
-                {p.cardId ? (
-                  <div className="ml-auto text-xs font-medium text-green-600 flex items-center gap-1">
-                    <span className="h-2 w-2 rounded-full bg-green-500"></span>
-                    Ready
-                  </div>
-                ) : (
-                  <div className="ml-auto text-xs font-medium text-gray-500 flex items-center gap-1">
-                    <span className="h-2 w-2 rounded-full bg-gray-400"></span>
-                    Selecting...
-                  </div>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
     </div>
   );
 }

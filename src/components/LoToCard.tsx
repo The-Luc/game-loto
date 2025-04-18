@@ -5,6 +5,7 @@ import { useGameStore, GameState } from '@/stores/useGameStore';
 import { cardTemplates } from '../lib/card-template';
 import { VictoryScreen } from './VictoryScreen';
 import { selectCardAction } from '@/server/actions/player';
+import { showErrorToast } from '../lib/utils';
 // TODO: Implement later
 // import { declareWinnerAction } from '@/server/actions/room';
 
@@ -61,7 +62,7 @@ export function LoToCard({
       setPlayer({ ...currentPlayer, cardId: cardId });
       const response = await selectCardAction(currentPlayer.id, cardId);
       if (!response.success) {
-        console.error('Card selection failed:', response.error);
+        showErrorToast(response.error || 'Lỗi chọn thẻ');
       }
     } catch (error) {
       console.error('Failed to select card:', error);

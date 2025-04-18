@@ -3,6 +3,8 @@
 import { prisma } from '@/lib/prisma';
 import { handleApiResponse } from '@/lib/utils';
 import { cardTemplates } from '@/lib/card-template';
+import { supabaseRealtime } from '@/lib/supabase';
+import { RealtimeEventEnum } from '@/lib/enums';
 
 type SelectCardResponse = {
 	success: boolean;
@@ -71,6 +73,13 @@ export async function selectCardAction(playerId: string, cardId: string): Promis
 			data: { cardId }
 		});
 
+		// Broadcast card selection event for real-time updates
+		await supabaseRealtime.broadcast(player.room.id, RealtimeEventEnum.CARD_SELECTED, {
+			playerId,
+			cardId,
+			nickname: player.nickname
+		});
+
 		// If all players have selected cards and room is in waiting state,
 		// update room status to 'selecting'
 		if (player.room.status === 'waiting') {
@@ -134,6 +143,13 @@ export async function markNumberAction(playerId: string, number: number) {
 			data: {
 				markedNumbers: [...player.markedNumbers, number],
 			},
+		});
+
+		// Broadcast card update event for real-time updates
+		await supabaseRealtime.broadcast(player.room.id, RealtimeEventEnum.CARD_UPDATED, {
+			playerId,
+			markedNumbers: updatedPlayer.markedNumbers,
+			markedNumber: number
 		});
 
 		return {

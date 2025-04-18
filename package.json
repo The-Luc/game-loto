@@ -13,7 +13,7 @@
     "parse-prd": "node scripts/dev.js parse-prd"
   },
   "prisma": {
-    "schema": "src/db/schema.prisma"
+    "schema": "prisma/schema.prisma"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.39.0",
