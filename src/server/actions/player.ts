@@ -1,10 +1,10 @@
 'use server';
 
 import { prisma } from '@/lib/prisma';
-import { handleApiResponse } from '@/lib/utils';
 import { cardTemplates } from '@/lib/card-template';
 import { supabaseRealtime } from '@/lib/supabase';
 import { RealtimeEventEnum } from '@/lib/enums';
+import { RoomStatus } from '@prisma/client';
 
 type SelectCardResponse = {
 	success: boolean;
@@ -20,12 +20,10 @@ export async function selectCardAction(playerId: string, cardId: string): Promis
 		// Validate card ID
 		const validCard = cardTemplates.find(card => card.id === cardId);
 		if (!validCard) {
-			const response = {
+			return {
 				success: false,
 				error: 'Invalid card selection.'
 			};
-			handleApiResponse(response);
-			return response;
 		}
 
 		// Find the player
@@ -35,22 +33,18 @@ export async function selectCardAction(playerId: string, cardId: string): Promis
 		});
 
 		if (!player) {
-			const response = {
+			return {
 				success: false,
-				error: 'Player not found.'
+				error: 'Không tìm thấy người chơi'
 			};
-			handleApiResponse(response);
-			return response;
 		}
 
 		// Check if the room is in the correct state
-		if (player.room.status !== 'selecting' && player.room.status !== 'waiting') {
-			const response = {
+		if (player.room.status !== RoomStatus.waiting) {
+			return {
 				success: false,
-				error: 'Cannot select card. Game has already started.'
+				error: 'Không thể chọn thẻ. Phòng đã bắt đầu.'
 			};
-			handleApiResponse(response);
-			return response;
 		}
 
 		// Check if this card is already selected by another player
@@ -59,12 +53,10 @@ export async function selectCardAction(playerId: string, cardId: string): Promis
 		);
 
 		if (cardAlreadySelected) {
-			const response = {
+			return {
 				success: false,
-				error: 'This card has already been selected by another player.'
+				error: 'Người chơi khác đã chọn thẻ này'
 			};
-			handleApiResponse(response);
-			return response;
 		}
 
 		// Update the player with the selected card
@@ -74,25 +66,11 @@ export async function selectCardAction(playerId: string, cardId: string): Promis
 		});
 
 		// Broadcast card selection event for real-time updates
+		// Ensure payload matches CardSelectedPayload: only playerId and cardId
 		await supabaseRealtime.broadcast(player.room.id, RealtimeEventEnum.CARD_SELECTED, {
 			playerId,
 			cardId,
-			nickname: player.nickname
 		});
-
-		// If all players have selected cards and room is in waiting state,
-		// update room status to 'selecting'
-		if (player.room.status === 'waiting') {
-			const allPlayersHaveCards = player.room.players.every(p => 
-				p.id === playerId || p.cardId !== '');
-
-			if (allPlayersHaveCards) {
-				await prisma.room.update({
-					where: { id: player.room.id },
-					data: { status: 'selecting' }
-				});
-			}
-		}
 
 		return {
 			success: true,
@@ -124,7 +102,7 @@ export async function markNumberAction(playerId: string, number: number) {
 
 		// Check if the room is in the playing state
 		if (player.room.status !== 'playing') {
-			return { success: false, error: 'Game is not in playing state.' };
+			return { success: false, error: 'Trò chơi chưa bắt đầu.' };
 		}
 
 		// Check if the number has been called in the room

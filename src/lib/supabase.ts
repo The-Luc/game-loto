@@ -1,6 +1,5 @@
 import { createClient, SupabaseClient, RealtimeChannel } from '@supabase/supabase-js';
-import { RealtimeEventEnum } from './enums';
-import { BroadcastPayloadMap, FullBroadcastPayload } from '@/types/broadcast';
+import { BroadcastPayloadMap } from '@/types/broadcast';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
@@ -28,6 +27,7 @@ function getOrCreateChannel(roomId: string, presenceKey = '', client: SupabaseCl
   let channel = channels.get(channelId);
 
   if (!channel) {
+    console.log(`[SupabaseRealtime] Creating new channel: ${channelId}`);
     channel = client.channel(channelId, {
       config: {
         broadcast: { self: false },
@@ -35,7 +35,16 @@ function getOrCreateChannel(roomId: string, presenceKey = '', client: SupabaseCl
       },
     });
     channels.set(channelId, channel);
-    channel.subscribe();
+    console.log(`[SupabaseRealtime] Subscribing to channel: ${channelId}`);
+    channel.subscribe((status, err) => {
+      if (err) {
+        console.error(`[SupabaseRealtime] Channel ${channelId} subscription error:`, err);
+      } else {
+        console.log(`[SupabaseRealtime] Channel ${channelId} subscription status: ${status}`);
+      }
+    });
+  } else {
+    console.log(`[SupabaseRealtime] Reusing existing channel: ${channelId}`);
   }
 
   return channel;
@@ -48,19 +57,27 @@ function getOrCreateChannel(roomId: string, presenceKey = '', client: SupabaseCl
  * @param callback Function to call when event is received
  * @returns A function to unsubscribe
  */
-export function subscribe<E extends RealtimeEventEnum>(
+export function subscribe<E extends keyof BroadcastPayloadMap>(
   roomId: string,
   event: E,
   callback: (payload: BroadcastPayloadMap[E]) => void,
   client: SupabaseClient = supabase
 ) {
   const channel = getOrCreateChannel(roomId, '', client);
+  console.log(`[SupabaseRealtime] Setting up listener for event '${event}' on channel ${channel.topic}`);
 
   const subscription = channel.on('broadcast', { event }, (message) => {
-    const fullPayload = message.payload as FullBroadcastPayload<E>;
+    console.log(`[SupabaseRealtime] Raw message received for event '${event}' on ${channel.topic}:`, message);
+    // Assert the expected structure based on our broadcast logic
+    const fullPayload = message.payload as { roomId: string } & BroadcastPayloadMap[E];
+
+    // Extract the event-specific payload (excluding roomId) for the callback
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { roomId: _, ...eventPayload } = fullPayload;
 
-    callback(eventPayload as BroadcastPayloadMap[E]);
+    console.log(`[SupabaseRealtime] Calling component callback for event '${event}' with payload:`, eventPayload);
+    // Call the user's callback with the correctly typed event-specific payload
+    callback(eventPayload as unknown as BroadcastPayloadMap[E]);
   });
 
   return () => {
@@ -75,7 +92,7 @@ export function subscribe<E extends RealtimeEventEnum>(
  * @param payload The data to send
  * @returns Promise that resolves when broadcast is complete
  */
-export async function broadcast<E extends RealtimeEventEnum>(
+export async function broadcast<E extends keyof BroadcastPayloadMap>(
   roomId: string,
   event: E,
   payload: BroadcastPayloadMap[E],
@@ -83,7 +100,8 @@ export async function broadcast<E extends RealtimeEventEnum>(
 ) {
   const channel = getOrCreateChannel(roomId, '', client);
 
-  const fullPayload: FullBroadcastPayload<E> = {
+  // Construct the full payload including the roomId
+  const fullPayload = {
     roomId,
     ...payload,
   };

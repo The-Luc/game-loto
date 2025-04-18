@@ -1,6 +1,7 @@
 import { useEffect, useCallback, useRef } from 'react';
-import { supabaseRealtime, GamePayload } from '@/lib/supabase';
-import { RealtimeEventEnum } from '../lib/enums';
+import { supabaseRealtime } from '@/lib/supabase';
+// import { RealtimeEventEnum } from '../lib/enums'; // No longer needed here
+import { BroadcastPayloadMap } from '@/types/broadcast';
 
 type UnsubscribeFn = () => void;
 
@@ -28,15 +29,26 @@ export function useSupabaseRealtime(roomId: string) {
    * @param callback Function to call when event is received
    */
   const subscribe = useCallback(
-    (event: RealtimeEventEnum, callback: (payload: GamePayload) => void) => {
-      if (!roomId) return;
+    <E extends keyof BroadcastPayloadMap>(event: E, callback: (payload: BroadcastPayloadMap[E]) => void) => {
+      if (!roomId) {
+        console.warn('useSupabaseRealtime: Cannot subscribe without roomId');
+        // Return a no-op unsubscribe function or handle appropriately
+        return () => { };
+      }
 
+      // Ensure supabaseRealtime.subscribe exists and is callable
+      if (typeof supabaseRealtime.subscribe !== 'function') {
+        console.error('useSupabaseRealtime: supabaseRealtime.subscribe is not a function');
+        return () => { };
+      }
+
+      // Call the generic subscribe from lib/supabase
       const unsubscribe = supabaseRealtime.subscribe(roomId, event, callback);
       subscriptions.current.push(unsubscribe);
 
       return unsubscribe;
     },
-    [roomId]
+    [roomId] // Removed supabaseRealtime from deps as it's stable
   );
 
   /**
@@ -45,11 +57,22 @@ export function useSupabaseRealtime(roomId: string) {
    * @param payload The data to send
    */
   const broadcast = useCallback(
-    async (event: RealtimeEventEnum, payload: Omit<GamePayload, 'roomId'>) => {
-      if (!roomId) return;
+    async <E extends keyof BroadcastPayloadMap>(event: E, payload: BroadcastPayloadMap[E]) => {
+      if (!roomId) {
+        console.warn('useSupabaseRealtime: Cannot broadcast without roomId');
+        return;
+      }
+
+      // Ensure supabaseRealtime.broadcast exists and is callable
+      if (typeof supabaseRealtime.broadcast !== 'function') {
+        console.error('useSupabaseRealtime: supabaseRealtime.broadcast is not a function');
+        return;
+      }
+
+      // Call the generic broadcast from lib/supabase
       return supabaseRealtime.broadcast(roomId, event, payload);
     },
-    [roomId]
+    [roomId] // Removed supabaseRealtime from deps
   );
 
   /**

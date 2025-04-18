@@ -78,7 +78,7 @@ export async function createRoomAction(nickname: string): Promise<CreateRoomResp
 				id: player.id,
 				nickname: player.nickname,
 				isHost: player.isHost,
-				cardId: player.cardId
+				cardId: player.cardId,
 			}
 		});
 
@@ -196,12 +196,16 @@ export async function updateRoomStatusAction(roomId: string, status: RoomStatus)
 
 		// Broadcast event based on the new status
 		if (status === 'playing') {
+			// Payload should match GameStartedPayload: { startTime: string }
 			await supabaseRealtime.broadcast(roomId, RealtimeEventEnum.GAME_STARTED, {
-				status: status
+				startTime: new Date().toISOString(), // Send start time
 			});
 		} else if (status === 'ended') {
+			// Payload should match GameEndedPayload: { endTime: string, winner?: Player }
+			// Winner determination logic is not here, send undefined for now.
 			await supabaseRealtime.broadcast(roomId, RealtimeEventEnum.GAME_ENDED, {
-				status: status
+				endTime: new Date().toISOString(), // Send end time
+				winner: undefined, // Winner logic needed separately
 			});
 		}
 
@@ -214,26 +218,73 @@ export async function updateRoomStatusAction(roomId: string, status: RoomStatus)
 
 export async function leaveRoomAction(roomId: string, playerId: string) {
 	try {
+		// Get room and player details before deletion
+		const room = await prisma.room.findUnique({ where: { id: roomId }, include: { players: true } });
+		const player = await prisma.player.findUnique({ where: { id: playerId } });
+
+		// Validate player first
+		if (!player) {
+			console.warn(`leaveRoomAction: Player ${playerId} not found.`);
+			return { success: false, error: 'Player not found.' };
+		}
+
+		// Validate room exists
+		if (!room) {
+			console.warn(`leaveRoomAction: Room ${roomId} not found.`);
+			return { success: false, error: 'Room not found.' };
+		}
+
+		// Validate player is in the correct room
+		if (player.roomId !== room.id) {
+			console.warn(`leaveRoomAction: Player ${playerId} is not in room ${roomId}.`);
+			return { success: false, error: 'Player is not in this room.' };
+		}
+
+		// Store nickname for logging before deleting
+		const playerNickname = player.nickname;
+		console.log(`leaveRoomAction: Player ${playerNickname} (${playerId}) attempting to leave room ${roomId}.`);
+
 		// Remove player from the room
 		await prisma.player.delete({
 			where: { id: playerId }
 		});
 
-		// Get room and player details before deletion for broadcasting
-		const room = await prisma.room.findUnique({ where: { id: roomId }, include: { players: true } });
-		const player = await prisma.player.findUnique({ where: { id: playerId } });
-		if (!room) return { success: true };
+		// Broadcast player left event
+		// Ensure payload matches PlayerLeftPayload: only playerId
+		await supabaseRealtime.broadcast(roomId, RealtimeEventEnum.PLAYER_LEFT, {
+			playerId: playerId,
+		});
 
-		// Broadcast player left event for real-time updates (if player still exists)
-		if (player) {
-			await supabaseRealtime.broadcast(roomId, RealtimeEventEnum.PLAYER_LEFT, {
-				playerId: playerId,
-				nickname: player.nickname
-			});
-		}
+		// Use stored nickname in log message
+		console.log(`leaveRoomAction: Player ${playerNickname} (${playerId}) successfully left room ${roomId}.`);
 
-		if (room.players.length === 0) {
+		// Check remaining players (use updated player count from the room query)
+		const remainingPlayersCount = room.players.filter(p => p.id !== playerId).length;
+		if (remainingPlayersCount === 0) {
+			console.log(`leaveRoomAction: No players left in room ${roomId}. Deleting room.`);
 			await prisma.room.delete({ where: { id: roomId } });
+		} else if (player.isHost) {
+			// If the leaving player was the host, handle host migration
+			console.log(`leaveRoomAction: Host ${playerNickname} (${playerId}) left room ${roomId}. Handling host migration...`);
+			// Fetch remaining players again AFTER deletion to be sure
+			const remainingPlayers = await prisma.player.findMany({
+				where: { roomId },
+				orderBy: { createdAt: 'asc' }, // oldest player first
+			});
+
+			if (remainingPlayers.length > 0) {
+				const newHost = remainingPlayers[0];
+				await prisma.room.update({
+					where: { id: roomId },
+					data: { hostId: newHost.id },
+				});
+				await prisma.player.update({
+					where: { id: newHost.id },
+					data: { isHost: true },
+				});
+				console.log(`leaveRoomAction: Assigned host to ${newHost.nickname} (${newHost.id}) in room ${roomId}.`);
+			}
+			// No else needed here, as deletion happens if remainingPlayersCount is 0 above
 		}
 
 		return { success: true };
