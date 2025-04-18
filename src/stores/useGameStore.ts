@@ -1,13 +1,13 @@
 import { create } from 'zustand';
 import { Player, Room } from '@prisma/client';
-import { LoToCard } from '@/lib/types'; // Assuming LoToCard might be needed
+import { LoToCardType } from '@/lib/types'; // Assuming LoToCard might be needed
 
 // Export the interface
 export interface GameState {
   room: Room | null;
   player: Player | null;
   playersInRoom: Player[]; // Keep track of all players in the room
-  selectedCard: LoToCard | null;
+  selectedCard: LoToCardType | null;
   calledNumbers: number[];
   winner: Player | null;
   gameError: string | null;
@@ -17,7 +17,7 @@ export interface GameState {
   setPlayersInRoom: (players: Player[]) => void;
   addPlayerToRoom: (player: Player) => void;
   removePlayerFromRoom: (playerId: string) => void;
-  setSelectedCard: (card: LoToCard | null) => void;
+  setSelectedCard: (card: LoToCardType | null) => void;
   setCalledNumbers: (numbers: number[]) => void;
   addCalledNumber: (number: number) => void;
   setWinner: (player: Player | null) => void;
@@ -52,7 +52,7 @@ export const useGameStore = create<GameState>((set) => ({
     // Type 'p' in filter
     playersInRoom: state.playersInRoom.filter((p: Player) => p.id !== playerId),
   })),
-  setSelectedCard: (card: LoToCard | null) => set({ selectedCard: card }),
+  setSelectedCard: (card: LoToCardType | null) => set({ selectedCard: card }),
   setCalledNumbers: (numbers: number[]) => set({ calledNumbers: numbers }),
   addCalledNumber: (number: number) => set((state: GameState) => ({
     calledNumbers: [...state.calledNumbers, number],

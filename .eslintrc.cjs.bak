@@ -1,0 +1,40 @@
+/** @type {import('eslint').Linter.Config} */
+module.exports = {
+  root: true,
+  parser: '@typescript-eslint/parser',
+  plugins: ['@typescript-eslint', 'react', 'react-hooks'],
+  extends: [
+    'eslint:recommended',
+    'plugin:@typescript-eslint/recommended',
+    'plugin:react/recommended',
+    'plugin:react-hooks/recommended',
+    'next/core-web-vitals', // Add Next.js recommended config
+    'prettier', // Make sure this is last to override other configs
+  ],
+  settings: {
+    react: {
+      version: 'detect', // Automatically detect the React version
+    },
+  },
+  env: {
+    browser: true,
+    node: true,
+    es6: true,
+  },
+  parserOptions: {
+    ecmaVersion: 'latest',
+    sourceType: 'module',
+    ecmaFeatures: {
+      jsx: true,
+    },
+  },
+  rules: {
+    // Add custom rules or override defaults here
+    'react/react-in-jsx-scope': 'off', // Not needed with React 17+ JSX transform
+    'react/prop-types': 'off', // Disable prop-types as we use TypeScript
+    '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }], // Warn on unused vars, allow underscore prefix
+    '@typescript-eslint/explicit-module-boundary-types': 'off', // Allow inferred return types
+    'react-hooks/rules-of-hooks': 'error',
+    'react-hooks/exhaustive-deps': 'warn',
+  },
+};

@@ -1,4 +1,4 @@
-import { LoToCard } from './types';
+import { LoToCardType } from './types';
 
 /**
  * Card templates for traditional Vietnamese Lô Tô game
@@ -20,7 +20,7 @@ import { LoToCard } from './types';
  */
 
 // Template Pair 1
-const template1A: LoToCard = {
+const template1A: LoToCardType = {
   id: 'template-1A',
   backgroundColor: '#1e5ee8', // Dark blue
   grid: [
@@ -37,7 +37,7 @@ const template1A: LoToCard = {
   ]
 };
 
-const template1B: LoToCard = {
+const template1B: LoToCardType = {
   id: 'template-1B',
   backgroundColor: '#1e5ee8', // Dark blue
   grid: [
@@ -54,7 +54,7 @@ const template1B: LoToCard = {
 };
 
 // Template Pair 2
-const template2A: LoToCard = {
+const template2A: LoToCardType = {
   id: 'template-2A',
   backgroundColor: '#d3c600', // Dark yellow
   grid: [
@@ -70,7 +70,7 @@ const template2A: LoToCard = {
   ]
 };
 
-const template2B: LoToCard = {
+const template2B: LoToCardType = {
   id: 'template-2B',
   backgroundColor: '#d3c600', // Dark yellow
   grid: [
@@ -87,7 +87,7 @@ const template2B: LoToCard = {
 };
 
 // Template Pair 3
-const template3A: LoToCard = {
+const template3A: LoToCardType = {
   id: 'template-3A',
   backgroundColor: '#015c2e', // Dark green
   grid: [
@@ -103,7 +103,7 @@ const template3A: LoToCard = {
   ]
 };
 
-const template3B: LoToCard = {
+const template3B: LoToCardType = {
   id: 'template-3B',
   backgroundColor: '#015c2e', // Dark green
   grid: [
@@ -120,7 +120,7 @@ const template3B: LoToCard = {
 };
 
 // Template Pair 4
-const template4A: LoToCard = {
+const template4A: LoToCardType = {
   id: 'template-4A',
   backgroundColor: '#bb5b1d', // Dark orange
   grid: [
@@ -136,7 +136,7 @@ const template4A: LoToCard = {
   ]
 };
 
-const template4B: LoToCard = {
+const template4B: LoToCardType = {
   id: 'template-4B',
   backgroundColor: '#bb5b1d', // Dark orange
   grid: [
@@ -153,7 +153,7 @@ const template4B: LoToCard = {
 };
 
 // Template Pair 5
-const template5A: LoToCard = {
+const template5A: LoToCardType = {
   id: 'template-5A',
   backgroundColor: '#962136', // Dark magenta
   grid: [
@@ -169,7 +169,7 @@ const template5A: LoToCard = {
   ]
 };
 
-const template5B: LoToCard = {
+const template5B: LoToCardType = {
   id: 'template-5B',
   backgroundColor: '#962136', // Dark magenta
   grid: [
@@ -186,7 +186,7 @@ const template5B: LoToCard = {
 };
 
 // Template Pair 6
-const template6A: LoToCard = {
+const template6A: LoToCardType = {
   id: 'template-6A',
   backgroundColor: '#5e3d26', // Dark brown
   grid: [
@@ -202,7 +202,7 @@ const template6A: LoToCard = {
   ]
 };
 
-const template6B: LoToCard = {
+const template6B: LoToCardType = {
   id: 'template-6B',
   backgroundColor: '#5e3d26', // Dark brown
   grid: [
@@ -219,7 +219,7 @@ const template6B: LoToCard = {
 };
 
 // Template Pair 7
-const template7A: LoToCard = {
+const template7A: LoToCardType = {
   id: 'template-7A',
   backgroundColor: '#3e3466', // Dark purple
   grid: [
@@ -235,7 +235,7 @@ const template7A: LoToCard = {
   ]
 };
 
-const template7B: LoToCard = {
+const template7B: LoToCardType = {
   id: 'template-7B',
   backgroundColor: '#3e3466', // Dark purple
   grid: [
@@ -252,7 +252,7 @@ const template7B: LoToCard = {
 };
 
 // Template Pair 8
-const template8A: LoToCard = {
+const template8A: LoToCardType = {
   id: 'template-8A',
   backgroundColor: '#9f4577', // Mulberry 
   grid: [
@@ -268,7 +268,7 @@ const template8A: LoToCard = {
   ]
 };
 
-const template8B: LoToCard = {
+const template8B: LoToCardType = {
   id: 'template-8B',
   backgroundColor: '#9f4577', // Mulberry
   grid: [
@@ -351,7 +351,7 @@ const template8B: LoToCard = {
 // };
 
 // Export all templates as an array of pairs
-export const cardTemplates = [
+export const cardTemplates: LoToCardType[] = [
   template1A,
   template1B,
   template2A,
@@ -373,7 +373,7 @@ export const cardTemplates = [
 /**
  * Returns a random card template from the available templates
  */
-export function getRandomCardTemplate(): LoToCard {
+export function getRandomCardTemplate(): LoToCardType {
   const randomIndex = Math.floor(Math.random() * cardTemplates.length);
 
   return cardTemplates[randomIndex];

@@ -57,8 +57,7 @@ export async function createRoomAction(nickname: string): Promise<CreateRoomResp
 			data: {
 				nickname,
 				isHost: true,
-				cardId: '',
-				markedNumbers: [],
+				selectedCardIds: [],
 				roomId: room.id,
 			}
 		});
@@ -78,7 +77,7 @@ export async function createRoomAction(nickname: string): Promise<CreateRoomResp
 				id: player.id,
 				nickname: player.nickname,
 				isHost: player.isHost,
-				cardId: player.cardId,
+				selectedCardIds: [],
 			}
 		});
 
@@ -134,7 +133,7 @@ export async function joinRoomAction(roomCode: string, nickname: string): Promis
 			data: {
 				nickname,
 				isHost: false,
-				cardId: '',
+				selectedCardIds: [],
 				markedNumbers: [],
 				roomId: room.id,
 			}
@@ -146,7 +145,7 @@ export async function joinRoomAction(roomCode: string, nickname: string): Promis
 				id: player.id,
 				nickname: player.nickname,
 				isHost: player.isHost,
-				cardId: player.cardId
+				selectedCardIds: player.selectedCardIds
 			}
 		});
 

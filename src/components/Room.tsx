@@ -14,6 +14,8 @@ import {
   getRoomWithPlayersAction,
 } from '@/server/actions/room';
 import { useRoomRealtime } from '@/lib/supabase-subscribe';
+import { cardTemplates } from '../lib/card-template';
+import { LoToCardType } from '../lib/types';
 
 export function Room() {
   const room = useGameStore((state: GameState) => state.room);
@@ -44,7 +46,9 @@ export function Room() {
   // Initial room data fetch (remains the same, adjusted dependencies and logging)
   useEffect(() => {
     if (!room || !player) {
-      console.log('Room component: No room or player found, cannot fetch initial data.');
+      console.log(
+        'Room component: No room or player found, cannot fetch initial data.'
+      );
       // Consider redirecting or showing an error state
       return;
     }
@@ -84,7 +88,9 @@ export function Room() {
         );
         useGameStore
           .getState()
-          .setGameError('An unexpected error occurred while loading room details.');
+          .setGameError(
+            'An unexpected error occurred while loading room details.'
+          );
       }
     };
 
@@ -98,6 +104,13 @@ export function Room() {
   if (!room || !player) {
     return <div className="container mx-auto p-4">Loading room details...</div>;
   }
+
+  const getCardById = (cardId: string) => {
+    return (
+      cardTemplates.find((c) => c.id === cardId) ||
+      ([] as unknown as LoToCardType)
+    );
+  };
 
   const isHost = player.isHost;
   const isWaiting = room.status === RoomStatus.waiting;
@@ -131,16 +144,26 @@ export function Room() {
           {isWaiting && !isHost && (
             <div className="bg-white rounded-lg shadow p-4 mb-4">
               <h2 className="text-xl font-bold mb-4">Chờ chủ xị</h2>
-              <p>Chủ xị sẽ bắt đầu trò chơi khi tất cả mọi người đã chọn bảng.</p>
+              <p>
+                Chủ xị sẽ bắt đầu trò chơi khi tất cả mọi người đã chọn bảng.
+              </p>
             </div>
           )}
 
           {isWaiting && <CardSelection />}
 
-          {isPlaying && player.cardId && (
+          {isPlaying && player.selectedCardIds.length > 0 && (
             <div className="bg-white rounded-lg shadow p-4 mb-4">
               <h2 className="text-xl font-bold mb-4">Bảng của bạn</h2>
-              <LoToCard cardId={player.cardId} playable={true} />
+              <div>
+                {player.selectedCardIds.map((cardId) => (
+                  <LoToCard
+                    key={cardId}
+                    card={getCardById(cardId)}
+                    playable={true}
+                  />
+                ))}
+              </div>
             </div>
           )}
 

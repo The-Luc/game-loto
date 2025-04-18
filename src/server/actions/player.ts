@@ -6,30 +6,49 @@ import { supabaseRealtime } from '@/lib/supabase';
 import { RealtimeEventEnum } from '@/lib/enums';
 import { RoomStatus } from '@prisma/client';
 
+// Define the maximum number of cards a player can select (mirroring frontend)
+const MAX_NUM_CARDS = 2;
+
 type SelectCardResponse = {
 	success: boolean;
 	error?: string;
-	cardId?: string;
+	selectedCardIds?: string[]; // Updated response field
 };
 
 /**
- * Select a card for a player
+ * Selects or deselects cards for a player.
  */
-export async function selectCardAction(playerId: string, cardId: string): Promise<SelectCardResponse> {
+export async function selectPlayerCardsAction(
+	playerId: string,
+	selectedCardIds: string[] // Updated parameter
+): Promise<SelectCardResponse> {
 	try {
-		// Validate card ID
-		const validCard = cardTemplates.find(card => card.id === cardId);
-		if (!validCard) {
+		// Validate number of selected cards
+		if (selectedCardIds.length > MAX_NUM_CARDS) {
 			return {
 				success: false,
-				error: 'Invalid card selection.'
+				error: `Bạn chỉ có thể chọn tối đa ${MAX_NUM_CARDS} thẻ.`,
 			};
+		}
+
+		// Validate all card IDs if any are selected
+		if (selectedCardIds.length > 0) {
+			const allValid = selectedCardIds.every(id =>
+				cardTemplates.some(template => template.id === id)
+			);
+			if (!allValid) {
+				return {
+					success: false,
+					error: 'Lựa chọn thẻ không hợp lệ.'
+				};
+			}
 		}
 
 		// Find the player
 		const player = await prisma.player.findUnique({
 			where: { id: playerId },
-			include: { room: { include: { players: true } } }
+			// Include other players in the room to check for conflicts
+			include: { room: { include: { players: { select: { id: true, selectedCardIds: true } } } } }
 		});
 
 		if (!player) {
@@ -47,34 +66,38 @@ export async function selectCardAction(playerId: string, cardId: string): Promis
 			};
 		}
 
-		// Check if this card is already selected by another player
-		const cardAlreadySelected = player.room.players.some(
-			p => p.id !== playerId && p.cardId === cardId
-		);
+		// Check if any selected card is already selected by another player in the room
+		for (const otherPlayer of player.room.players) {
+			if (otherPlayer.id === playerId) continue; // Skip self
 
-		if (cardAlreadySelected) {
-			return {
-				success: false,
-				error: 'Người chơi khác đã chọn thẻ này'
-			};
+			const conflict = selectedCardIds.some(id =>
+				otherPlayer.selectedCardIds.includes(id)
+			);
+
+			if (conflict) {
+				return {
+					success: false,
+					error: 'Một hoặc nhiều thẻ bạn chọn đã được người chơi khác chọn.',
+				};
+			}
 		}
 
-		// Update the player with the selected card
+		// Update the player with the selected card(s)
 		await prisma.player.update({
 			where: { id: playerId },
-			data: { cardId }
+			data: { selectedCardIds } // Update with the array
 		});
 
 		// Broadcast card selection event for real-time updates
-		// Ensure payload matches CardSelectedPayload: only playerId and cardId
+		// TODO: Ensure CardSelectedPayload type definition matches this { playerId, selectedCardIds }
 		await supabaseRealtime.broadcast(player.room.id, RealtimeEventEnum.CARD_SELECTED, {
 			playerId,
-			cardId,
+			selectedCardIds, // Send the array
 		});
 
 		return {
 			success: true,
-			cardId
+			selectedCardIds // Return the array
 		};
 	} catch (error) {
 		console.error('Failed to select card:', error);

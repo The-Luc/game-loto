@@ -16,7 +16,7 @@ export type BroadcastPlayerInfo = {
  * Payload for the PLAYER_JOINED event.
  */
 export type PlayerJoinedPayload = {
-	player: Pick<Player, 'id' | 'nickname' | 'isHost' | 'cardId'>; // Using Pick for clarity
+	player: Pick<Player, 'id' | 'nickname' | 'isHost' | 'selectedCardIds'>; // Using Pick for clarity, updated cardId to selectedCardIds
 };
 
 /**
@@ -38,7 +38,7 @@ export type GameStartedPayload = {
  */
 export type CardSelectedPayload = {
 	playerId: string;
-	cardId: string;
+	selectedCardIds: string[]; // Changed from cardId: string
 };
 
 /**

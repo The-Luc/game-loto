@@ -1,24 +1,30 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useGameStore, GameState } from '@/stores/useGameStore';
-import { cardTemplates } from '../lib/card-template';
-import { VictoryScreen } from './VictoryScreen';
-import { selectCardAction } from '@/server/actions/player';
-import { showErrorToast } from '../lib/utils';
+import { GameState, useGameStore } from '@/stores/useGameStore';
+import { useState } from 'react';
+import { LoToCardType } from '../lib/types';
+import { cn } from '../lib/utils';
 // TODO: Implement later
 // import { declareWinnerAction } from '@/server/actions/room';
 
 interface LoToCardProps {
-  cardId: string;
+  card: LoToCardType;
+  isSelected?: boolean;
+  isSelectedByOther?: boolean;
   selectable?: boolean;
   playable?: boolean;
+  isShaking?: boolean;
+  onClick?: () => void;
 }
 
 export function LoToCard({
-  cardId,
-  selectable = false,
   playable = false,
+  card,
+  isSelected,
+  isSelectedByOther,
+  selectable = true,
+  onClick,
+  isShaking,
 }: LoToCardProps) {
   const room = useGameStore((state: GameState) => state.room);
   const currentPlayer = useGameStore((state: GameState) => state.player);
@@ -30,43 +36,39 @@ export function LoToCard({
   const [selectedNumbers, setSelectedNumbers] = useState<number[]>([]);
   const [cardSet, setCardSet] = useState<Set<number>[]>([]);
 
-  const card = cardTemplates.find(c => c.id === cardId);
-  const currentPlayerCardId = currentPlayer?.cardId;
-  const selectedCardIds = playersInRoom?.map(p => p.cardId);
-  const hasWon = !!currentWinner;
+  const currentPlayerCardIds = currentPlayer?.selectedCardIds || [];
+  // const selectedCardIds = playersInRoom?.map(p => p.cardId);
+  // const hasWon = !!currentWinner;
 
-  useEffect(() => {
-    if (!currentWinner) {
-      setSelectedNumbers([]);
-    }
-  }, [currentWinner]);
+  // useEffect(() => {
+  //   if (!currentWinner) {
+  //     setSelectedNumbers([]);
+  //   }
+  // }, [currentWinner]);
 
-  useEffect(() => {
-    if (!card) return;
-    const grid = card.grid.map(
-      (row: (number | null)[]) =>
-        new Set(row.filter((cell: number | null): cell is number => cell !== null))
-    );
-    setCardSet(grid);
-  }, [card]);
+  // useEffect(() => {
+  //   if (!card) return;
+  //   const grid = card.grid.map(
+  //     (row: (number | null)[]) =>
+  //       new Set(row.filter((cell: number | null): cell is number => cell !== null))
+  //   );
+  //   setCardSet(grid);
+  // }, [card]);
 
-  const getPlayerName = (cId: string) => {
-    const player = playersInRoom?.find(p => p.cardId === cId);
-    if (player?.id === currentPlayer?.id) return 'You';
-    return player?.nickname || 'Unknown';
-  };
 
   const handleSelectCard = async () => {
-    if (!card || !currentPlayer || !selectable) return;
-    try {
-      setPlayer({ ...currentPlayer, cardId: cardId });
-      const response = await selectCardAction(currentPlayer.id, cardId);
-      if (!response.success) {
-        showErrorToast(response.error || 'Lỗi chọn thẻ');
-      }
-    } catch (error) {
-      console.error('Failed to select card:', error);
-    }
+    // This code interferes with the new implementation in CardSelection.tsx
+    return;
+    // if (!card || !currentPlayer || !selectable) return;
+    // try {
+    //   setPlayer({ ...currentPlayer, cardId: cardId });
+    //   const response = await selectCardAction(currentPlayer.id, cardId);
+    //   if (!response.success) {
+    //     showErrorToast(response.error || 'Lỗi chọn thẻ');
+    //   }
+    // } catch (error) {
+    //   console.error('Failed to select card:', error);
+    // }
   };
 
   const handleCellClick = async (number: number | null) => {
@@ -74,45 +76,46 @@ export function LoToCard({
       return handleSelectCard();
     }
 
-    if (playable && number && !hasWon && currentPlayer && room) {
-      if (!selectedNumbers.includes(number) && currentCalledNumbers.includes(number)) {
-        setSelectedNumbers([...selectedNumbers, number]);
+    // if (playable && number && !hasWon && currentPlayer && room) {
+    //   if (!selectedNumbers.includes(number) && currentCalledNumbers.includes(number)) {
+    //     setSelectedNumbers([...selectedNumbers, number]);
 
-        const playerHasWon = checkWinning(number);
+        // const playerHasWon = checkWinning(number);
 
-        if (playerHasWon) {
-          try {
-            // await declareWinnerAction(room.id, currentPlayer.id);
-          } catch (error) {
-            console.error('Failed to declare winner:', error);
-          }
-        }
-      }
-    }
+        // if (playerHasWon) {
+        //   try {
+        //     // await declareWinnerAction(room.id, currentPlayer.id);
+        //   } catch (error) {
+        //     console.error('Failed to declare winner:', error);
+        //   }
+        // }
+      // }
+    // }
   };
 
-  const checkWinning = (number: number): boolean => {
-    for (const row of cardSet) {
-      if (!row.has(number)) continue;
-      row.delete(number);
-      if (row.size === 0) {
-        return true;
-      }
-      break;
-    }
-    return false;
-  };
+  // const checkWinning = (number: number): boolean => {
+  //   for (const row of cardSet) {
+  //     if (!row.has(number)) continue;
+  //     row.delete(number);
+  //     if (row.size === 0) {
+  //       return true;
+  //     }
+  //     break;
+  //   }
+  //   return false;
+  // };
 
   return (
-    <>
-      {hasWon && <VictoryScreen />}
-
+    <div>
       <div
-        onClick={() => handleSelectCard()}
-        className={`border-2 rounded-lg p-2 relative bg-black/80 ${
-          selectable ? 'cursor-pointer hover:border-blue-500' : ''
-        } ${currentPlayerCardId === cardId && selectable ? 'border-blue-500' : ''}`}
-        style={{ pointerEvents: hasWon && !selectable ? 'none' : 'auto' }}
+        onClick={handleSelectCard}
+        className={cn(
+          "border-2 rounded-lg p-2 relative bg-black/80",
+          selectable && "cursor-pointer hover:border-blue-500",
+          currentPlayerCardIds.includes(card.id) && selectable && "border-blue-500",
+          isShaking && "animate-shake"
+        )}
+        style={{ pointerEvents: !selectable ? 'none' : 'auto' }}
       >
         <div className="flex flex-col">
           {[0, 1, 2].map(groupIndex => (
@@ -154,19 +157,7 @@ export function LoToCard({
             </div>
           ))}
         </div>
-        {selectable &&
-          selectedCardIds?.includes(cardId) &&
-          currentPlayerCardId !== cardId && (
-            <>
-              <div className="absolute top-0 left-0 w-full h-full bg-gray-500 opacity-50 cursor-not-allowed pointer-events-none rounded-lg"></div>
-              <div className="absolute top-0 left-0 w-full h-full">
-                <div className="flex items-center justify-center h-full text-green-300 opacity-100 text-4xl font-bold ">
-                  {getPlayerName(cardId)}
-                </div>
-              </div>
-            </>
-          )}
       </div>
-    </>
+    </div>
   );
 }
