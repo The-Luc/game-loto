@@ -139,7 +139,7 @@ export function Room() {
 
           {isPlaying && player.cardId && (
             <div className="bg-white rounded-lg shadow p-4 mb-4">
-              <h2 className="text-xl font-bold mb-4">Bảng Của Bạn</h2>
+              <h2 className="text-xl font-bold mb-4">Bảng của bạn</h2>
               <LoToCard cardId={player.cardId} playable={true} />
             </div>
           )}
