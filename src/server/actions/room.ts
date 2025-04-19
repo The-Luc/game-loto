@@ -22,6 +22,13 @@ type JoinRoomResponse = {
 	player?: Player;
 };
 
+type MarkNumberResponse = {
+	success: boolean;
+	error?: string;
+	player?: Player;
+	markedNumbers?: number[];
+};
+
 /**
  * Create a new room and host player
  */
@@ -237,6 +244,115 @@ export async function callNumberAction(roomId: string) {
 	} catch (error) {
 		console.error('Failed to call number:', error);
 		return { success: false, error: 'Failed to call number' };
+	}
+}
+
+/**
+ * Mark a number on a player's card
+ */
+export async function markNumberAction(roomId: string, playerId: string, cardId: string, number: number): Promise<MarkNumberResponse> {
+	try {
+		// Guard clause: Validate input parameters
+		if (!roomId || !playerId || !cardId || !number) {
+			return {
+				success: false,
+				error: 'Missing required parameters'
+			};
+		}
+
+		// Guard clause: Check if room exists and is in playing state
+		const room = await prisma.room.findUnique({
+			where: { id: roomId },
+		});
+
+		if (!room) {
+			return {
+				success: false,
+				error: 'Room not found'
+			};
+		}
+
+		if (room.status !== RoomStatus.playing) {
+			return {
+				success: false,
+				error: 'Game is not in playing status'
+			};
+		}
+
+		// Guard clause: Check if the number has actually been called
+		if (!room.calledNumbers.includes(number)) {
+			return {
+				success: false, 
+				error: 'Number has not been called yet'
+			};
+		}
+
+		// Guard clause: Verify player exists and is in this room
+		const player = await prisma.player.findUnique({
+			where: { id: playerId },
+		});
+
+		if (!player) {
+			return {
+				success: false,
+				error: 'Player not found'
+			};
+		}
+
+		if (player.roomId !== roomId) {
+			return {
+				success: false,
+				error: 'Player is not in this room'
+			};
+		}
+
+		// Guard clause: Verify card belongs to this player
+		if (!player.selectedCardIds.includes(cardId)) {
+			return {
+				success: false,
+				error: 'Card is not selected by this player'
+			};
+		}
+
+		// Get current marked numbers and add the new one if not already marked
+		const currentMarkedNumbers = player.markedNumbers || [];
+		
+		// Skip if already marked
+		if (currentMarkedNumbers.includes(number)) {
+			return {
+				success: true,
+				player,
+				markedNumbers: currentMarkedNumbers
+			};
+		}
+
+		// Add the number to marked numbers
+		const updatedMarkedNumbers = [...currentMarkedNumbers, number];
+
+		// Update the player's marked numbers in the database
+		const updatedPlayer = await prisma.player.update({
+			where: { id: playerId },
+			data: { markedNumbers: updatedMarkedNumbers }
+		});
+
+		// Broadcast card updated event for real-time updates
+		await supabaseRealtime.broadcast(roomId, RealtimeEventEnum.CARD_UPDATED, {
+			playerId,
+			markedNumbers: updatedMarkedNumbers,
+			markedNumber: number // Add the specific number that was just marked
+		});
+
+		return {
+			success: true,
+			player: updatedPlayer,
+			markedNumbers: updatedMarkedNumbers
+		};
+	} catch (error) {
+		console.error('Failed to mark number:', error);
+		return {
+			success: false,
+			error: 'Failed to mark number on card'
+		};
 	}
 }
 
