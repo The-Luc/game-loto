@@ -13,7 +13,11 @@ interface CheckWinParams {
  * @param params Object containing grid, marked numbers, and last marked number
  * @returns Object indicating win status and winning pattern
  */
-export function checkHorizontalWin({ grid, markedNumbers, lastMarkedNumber }: CheckWinParams): {
+export function checkHorizontalWin({
+  grid,
+  markedNumbers,
+  lastMarkedNumber,
+}: CheckWinParams): {
   hasWon: boolean;
   winningRow?: number;
   winningNumbers?: number[];
@@ -22,7 +26,7 @@ export function checkHorizontalWin({ grid, markedNumbers, lastMarkedNumber }: Ch
   const result = {
     hasWon: false,
     winningRow: undefined,
-    winningNumbers: undefined
+    winningNumbers: undefined,
   };
 
   // Find which row the last marked number belongs to
@@ -54,74 +58,14 @@ export function checkHorizontalWin({ grid, markedNumbers, lastMarkedNumber }: Ch
   }
 
   // Count marked numbers in this row
-  const markedInRow = rowValues.filter(num => markedNumbers.includes(num));
+  const markedInRow = rowValues.filter((num) => markedNumbers.includes(num));
 
   // Win condition: all non-null values in the row are marked
   if (markedInRow.length === rowValues.length && rowValues.length > 0) {
     return {
       hasWon: true,
       winningRow: rowIndex,
-      winningNumbers: rowValues
-    };
-  }
-
-  return result;
-}
-
-/**
- * Checks if a column is complete (vertical win)
- * @param params Object containing grid, marked numbers, and last marked number
- * @returns Object indicating win status and winning pattern
- */
-export function checkVerticalWin({ grid, markedNumbers, lastMarkedNumber }: CheckWinParams): {
-  hasWon: boolean;
-  winningColumn?: number;
-  winningNumbers?: number[];
-} {
-  // Default return value
-  const result = {
-    hasWon: false,
-    winningColumn: undefined,
-    winningNumbers: undefined
-  };
-
-  // Find which column the last marked number belongs to
-  let columnIndex = -1;
-  let rowIndex = -1;
-
-  // Find the row/column indices of the last marked number
-  for (let r = 0; r < grid.length; r++) {
-    for (let c = 0; c < grid[r].length; c++) {
-      if (grid[r][c] === lastMarkedNumber) {
-        rowIndex = r;
-        columnIndex = c;
-        break;
-      }
-    }
-    if (columnIndex !== -1) break;
-  }
-
-  // If the number wasn't found in the grid, return no win
-  if (columnIndex === -1) return result;
-
-  // Extract the column values (ignore nulls)
-  const columnValues: number[] = [];
-  for (let r = 0; r < grid.length; r++) {
-    const value = grid[r][columnIndex];
-    if (value !== null) {
-      columnValues.push(value);
-    }
-  }
-
-  // Count marked numbers in this column
-  const markedInColumn = columnValues.filter(num => markedNumbers.includes(num));
-
-  // Win condition: all non-null values in the column are marked
-  if (markedInColumn.length === columnValues.length && columnValues.length > 0) {
-    return {
-      hasWon: true,
-      winningColumn: columnIndex,
-      winningNumbers: columnValues
+      winningNumbers: rowValues,
     };
   }
 

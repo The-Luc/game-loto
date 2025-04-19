@@ -16,6 +16,7 @@ interface LoToCardProps {
   selectable?: boolean;
   playable?: boolean;
   isShaking?: boolean;
+  highlightedRowIndex?: number; // New prop for highlighting a winning row
   onClick?: () => void;
 }
 
@@ -27,9 +28,9 @@ export function LoToCard({
   selectable = true,
   onClick,
   isShaking,
+  highlightedRowIndex,
 }: LoToCardProps) {
   const room = useGameStore((state: GameState) => state.room);
-  const playersInRoom = useGameStore((state: GameState) => state.playersInRoom);
   const currentPlayer = useCurPlayer();
   const currentCalledNumbers = useGameStore(
     (state: GameState) => state.calledNumbers
@@ -66,9 +67,9 @@ export function LoToCard({
   // Function to check and update completed columns
   const updateCompletedColumns = (markedNumbers: number[]) => {
     if (!card?.grid) return;
-    
+
     const completed: number[] = [];
-    
+
     // Check each column for completion
     for (let c = 0; c < card.grid[0].length; c++) {
       // Extract all numbers in this column (ignoring nulls)
@@ -79,15 +80,17 @@ export function LoToCard({
           columnValues.push(value);
         }
       }
-      
+
       // Check if all numbers in this column are marked
-      const allMarked = columnValues.every(num => markedNumbers.includes(num));
-      
+      const allMarked = columnValues.every((num) =>
+        markedNumbers.includes(num)
+      );
+
       if (allMarked && columnValues.length > 0) {
         completed.push(c);
       }
     }
-    
+
     setCompletedColumns(completed);
   };
 
@@ -115,7 +118,7 @@ export function LoToCard({
           // Optimistically update the UI
           const newMarkedNumbers = [...selectedNumbers, number];
           setSelectedNumbers(newMarkedNumbers);
-          
+
           // Check for completed columns with the newly marked number
           updateCompletedColumns(newMarkedNumbers);
 
@@ -135,18 +138,24 @@ export function LoToCard({
           }
 
           // Check if this number completes a row
+          // This now returns all necessary win info (hasWon, winningNumbers, winningRowIndex)
           const winResult = checkWinning(number);
 
-          if (winResult.hasWon && winResult.winningNumbers) {
+          if (
+            winResult.hasWon &&
+            winResult.winningNumbers &&
+            winResult.winningRowIndex !== undefined
+          ) {
             try {
               // Call the server action to declare the winner
               const result = await declareWinnerAction(
-                room.id, 
-                currentPlayer.id, 
-                card.id, 
-                winResult.winningNumbers
+                room.id,
+                currentPlayer.id,
+                card.id,
+                winResult.winningNumbers,
+                winResult.winningRowIndex
               );
-              
+
               if (result.success) {
                 toast.success('You completed a row! 🎉');
               } else {
@@ -169,13 +178,15 @@ export function LoToCard({
   };
 
   // Check if a number completes a row (horizontal win)
-  const checkWinning = (number: number): { hasWon: boolean; winningNumbers?: number[] } => {
+  const checkWinning = (
+    number: number
+  ): { hasWon: boolean; winningNumbers?: number[]; winningRowIndex?: number } => {
     // We need to have at least one marked number to check for a win
     if (!number) return { hasWon: false };
-    
+
     // Need to know the player's marked numbers and card grid
     if (!currentPlayer?.markedNumbers || !card.grid) return { hasWon: false };
-    
+
     // Convert the 2D grid to a format we can use with our win detection
     const markedNumbers = [...selectedNumbers, number]; // Include the number just marked
 
@@ -183,14 +194,15 @@ export function LoToCard({
     const horizontalWin = checkHorizontalWin({
       grid: card.grid,
       markedNumbers,
-      lastMarkedNumber: number
+      lastMarkedNumber: number,
     });
 
     // Return win status and details
     if (horizontalWin.hasWon) {
       return {
         hasWon: true,
-        winningNumbers: horizontalWin.winningNumbers
+        winningNumbers: horizontalWin.winningNumbers,
+        winningRowIndex: horizontalWin.winningRow,
       };
     }
 
@@ -251,11 +263,17 @@ export function LoToCard({
                           isSelected &&
                             isCalled &&
                             'bg-green-200 border-green-600 border-2 shadow-inner',
-                            
+
                           // Highlight completed column
                           completedColumns.includes(colIndex) &&
                             cell &&
                             'bg-green-300 border-green-700 border-2 shadow-lg',
+
+                          // Highlight winning row
+                          highlightedRowIndex !== undefined &&
+                            highlightedRowIndex === rowIndex &&
+                            cell &&
+                            'bg-amber-300 border-amber-600 border-2 shadow-lg animate-pulse',
 
                           // Styling for called but unmarked cells
                           !isSelected && isCalled && 'opacity-70 bg-yellow-50',

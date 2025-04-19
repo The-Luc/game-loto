@@ -73,6 +73,8 @@ export type WinnerDeclaredPayload = {
 	playerId: string;
 	winnerName: string;
 	winningNumbers: number[];
+	cardId: string;
+	winningRowIndex: number;
 };
 
 /**

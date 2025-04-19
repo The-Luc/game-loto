@@ -1,12 +1,13 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useGameStore, GameState } from '@/stores/useGameStore';
 import { useCurPlayer } from '@/hooks/useCurPlayer';
 import { PlayerList } from '@/components/PlayerList';
 import { CardSelection } from '@/components/CardSelection';
 import { LoToCard } from '@/components/LoToCard';
 import { NumberCaller } from '@/components/NumberCaller';
+import { WinModal } from '@/components/WinModal';
 import { Button } from '@/components/ui/button';
 import { RoomStatus } from '@prisma/client';
 import {
@@ -15,12 +16,22 @@ import {
   getRoomWithPlayersAction,
 } from '@/server/actions/room';
 import { useRoomRealtime } from '@/lib/supabase-subscribe';
+import { subscribe } from '@/lib/supabase';
+import { RealtimeEventEnum } from '@/lib/enums';
 import { cardTemplates } from '../lib/card-template';
 import { LoToCardType } from '../lib/types';
 
 export function Room() {
   const room = useGameStore((state: GameState) => state.room);
   const curPlayer = useCurPlayer();
+  
+  // State for win modal
+  const [showWinModal, setShowWinModal] = useState(false);
+  const [winnerInfo, setWinnerInfo] = useState<{
+    name: string;
+    cardId: string;
+    winningRowIndex: number;
+  } | null>(null);
 
   const handleLeaveRoom = async () => {
     if (room && curPlayer) {
@@ -40,6 +51,19 @@ export function Room() {
       } catch (error) {
         console.error('Failed to start game:', error);
         useGameStore.getState().setGameError('Failed to start game');
+      }
+    }
+  };
+
+  const handlePlayAgain = async () => {
+    if (room && curPlayer?.isHost) {
+      try {
+        await updateRoomStatusAction(room.id, RoomStatus.waiting);
+        setShowWinModal(false);
+        setWinnerInfo(null);
+      } catch (error) {
+        console.error('Failed to restart game:', error);
+        useGameStore.getState().setGameError('Failed to restart game');
       }
     }
   };
@@ -101,6 +125,31 @@ export function Room() {
 
   // Use the custom hook to manage realtime subscriptions
   useRoomRealtime(room?.id);
+
+  // Subscribe to winner declaration events
+  useEffect(() => {
+    if (!room?.id) return;
+    
+    // Subscribe to winner declared events
+    const unsubscribe = subscribe(
+      room.id,
+      RealtimeEventEnum.WINNER_DECLARED,
+      (payload) => {
+        console.log('Winner declared event received:', payload);
+        // When a winner is declared, update state to show modal
+        setWinnerInfo({
+          name: payload.winnerName,
+          cardId: payload.cardId,
+          winningRowIndex: payload.winningRowIndex
+        });
+        setShowWinModal(true);
+      }
+    );
+    
+    return () => {
+      unsubscribe();
+    };
+  }, [room?.id]);
 
   if (!room || !curPlayer) {
     return <div className="container mx-auto p-4">Loading room details...</div>;
@@ -170,9 +219,31 @@ export function Room() {
             </div>
           )}
 
-          {isPlaying && <NumberCaller />}
+          {isPlaying && !room.winnerId && <NumberCaller />}
+          {isPlaying && room.winnerId && (
+            <div className="bg-white rounded-lg shadow p-4 mb-4">
+              <div className="text-center mb-4">
+                <h2 className="text-xl font-bold mb-2">Trò chơi kết thúc!</h2>
+                <p>Người chiến thắng đã được xác định</p>
+              </div>
+              {curPlayer?.isHost && (
+                <Button onClick={handlePlayAgain} className="w-full">Chơi lại</Button>
+              )}
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Win Modal */}
+      {showWinModal && winnerInfo && (
+        <WinModal
+          isOpen={showWinModal}
+          onCloseAction={() => setShowWinModal(false)}
+          winnerName={winnerInfo.name}
+          winningCard={getCardById(winnerInfo.cardId)}
+          winningRowIndex={winnerInfo.winningRowIndex}
+        />
+      )}
     </div>
   );
 }
