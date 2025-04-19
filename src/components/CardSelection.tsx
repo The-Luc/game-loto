@@ -3,6 +3,7 @@
 import { useState, useEffect, useTransition } from 'react';
 import { cardTemplates } from '../lib/card-template';
 import { useGameStore } from '@/stores/useGameStore';
+import { useCurPlayer } from '@/hooks/useCurPlayer';
 import { Button } from '@/components/ui/button';
 import { updateRoomStatusAction } from '@/server/actions/room';
 import { selectPlayerCardsAction } from '@/server/actions/player'; // Import the new action
@@ -15,7 +16,8 @@ import { SelectableCard } from './SelectableCard';
 const MAX_NUM_CARDS = 2;
 
 export function CardSelection() {
-  const { player, room, playersInRoom, setRoom } = useGameStore();
+  const { room, playersInRoom, setRoom } = useGameStore();
+  const curPlayer = useCurPlayer();
   // State to hold the IDs of the selected cards
   const [selectedCardIds, setSelectedCardIds] = useState<string[]>([]);
   const [isHost, setIsHost] = useState(false);
@@ -26,23 +28,13 @@ export function CardSelection() {
   } | null>(null); // State for shake animation
   const [isPending, startTransition] = useTransition();
 
-  // Function to find which player selected a specific card
-  const findPlayerName = (cardId: string) => {
-    if (selectedCardIds.includes(cardId)) return 'Thẻ của bạn';
-
-    // Check which player's selectedCardIds includes the cardId
-    const p = playersInRoom?.find((p) => p.selectedCardIds.includes(cardId));
-    if (!p) return '';
-    return p.id === player?.id ? 'Thẻ của bạn' : p.nickname || 'Không biết';
-  };
-
   useEffect(() => {
-    if (player) {
+    if (curPlayer) {
       // Initialize with the player's current selection from the backend
-      setSelectedCardIds(player.selectedCardIds || []);
-      setIsHost(player.isHost);
+      setSelectedCardIds(curPlayer.selectedCardIds || []);
+      setIsHost(curPlayer.isHost);
     }
-  }, [player]);
+  }, [curPlayer]);
 
   useEffect(() => {
     if (playersInRoom && playersInRoom.length > 0) {
@@ -54,9 +46,19 @@ export function CardSelection() {
     }
   }, [playersInRoom]);
 
+  // Function to find which player selected a specific card
+  const findPlayerName = (cardId: string) => {
+    if (selectedCardIds.includes(cardId)) return 'Thẻ của bạn';
+
+    // Check which player's selectedCardIds includes the cardId
+    const p = playersInRoom?.find((p) => p.selectedCardIds.includes(cardId));
+    if (!p) return '';
+    return p.id === curPlayer?.id ? 'Thẻ của bạn' : p.nickname || 'Không biết';
+  };
+
   // Handler for selecting/deselecting a card
   const handleCardSelect = async (cardId: string) => {
-    if (!player || isPending) return; // Prevent action if no player or already updating
+    if (!curPlayer || isPending) return; // Prevent action if no player or already updating
 
     const isSelected = selectedCardIds.includes(cardId);
     let finalSelectedIds: string[] = [...selectedCardIds];
@@ -80,14 +82,14 @@ export function CardSelection() {
 
     startTransition(async () => {
       const response = await selectPlayerCardsAction(
-        player.id,
+        curPlayer.id,
         finalSelectedIds
       );
 
       if (!response.success) {
         toast.error('Lỗi khi chọn bảng', { description: response.error });
         // Revert optimistic update on error
-        setSelectedCardIds(player.selectedCardIds || []);
+        setSelectedCardIds(curPlayer.selectedCardIds || []);
         return;
       }
 
@@ -157,7 +159,7 @@ export function CardSelection() {
               !isSelected &&
               playersInRoom?.some(
                 (p) =>
-                  p.id !== player?.id && p.selectedCardIds.includes(card.id)
+                  p.id !== curPlayer?.id && p.selectedCardIds.includes(card.id)
               );
             const name = findPlayerName(card.id);
 

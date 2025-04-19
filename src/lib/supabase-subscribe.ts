@@ -1,7 +1,6 @@
 import { useEffect } from 'react';
 import { useSupabaseRealtime } from '@/hooks/useSupabaseRealtime';
 import { RealtimeEventEnum } from '@/lib/enums';
-import { getRoomWithPlayersAction } from '@/server/actions/room';
 import { useGameStore } from '@/stores/useGameStore';
 import { Player, Room, RoomStatus } from '@prisma/client';
 import { BroadcastPayloadMap } from '../types/broadcast';
@@ -21,20 +20,30 @@ function handlePlayerJoined(
   setPlayersInRoom: (players: Player[]) => void
 ) {
   console.log('Player joined event received (from hook)', payload);
-  const currentRoomId = useGameStore.getState().room?.id; // Get latest room id from store
+  const gameState = useGameStore.getState();
+  const currentRoomId = gameState.room?.id;
+  const currentPlayers = gameState.playersInRoom;
 
   if (!currentRoomId) return; // Ensure room still exists in state
+  if (!payload.player) {
+    console.error('useRoomRealtime: Player data missing from PLAYER_JOINED payload');
+    return;
+  }
 
-  // Fetch updated room data to include the new player
-  return getRoomWithPlayersAction(currentRoomId).then(response => {
-    if (!response.success || !response.room) {
-      console.error('useRoomRealtime: Failed to fetch room after PLAYER_JOINED', response.error);
-      return;
-    }
+  // Convert payload data to Player type
+  const newPlayer = payload.player as Player;
+  
+  // Check if player already exists in the list (avoid duplicates)
+  const playerExists = currentPlayers.some(player => player.id === newPlayer.id);
+  if (playerExists) {
+    console.log('useRoomRealtime: Player already in room list, skipping update');
+    return;
+  }
 
-    console.log('useRoomRealtime: Updating players after PLAYER_JOINED', response.room.players);
-    setPlayersInRoom(response.room.players || []);
-  });
+  // Add the new player to the existing players list
+  const updatedPlayers = [...currentPlayers, newPlayer];
+  console.log('useRoomRealtime: Updating players after PLAYER_JOINED', updatedPlayers);
+  setPlayersInRoom(updatedPlayers);
 }
 
 /**
@@ -45,18 +54,21 @@ function handlePlayerLeft(
   setPlayersInRoom: (players: Player[]) => void
 ) {
   console.log('Player left event received (from hook)', payload);
-  const currentRoomId = useGameStore.getState().room?.id;
+  const gameState = useGameStore.getState();
+  const currentRoomId = gameState.room?.id;
+  const currentPlayers = gameState.playersInRoom;
+  
   if (!currentRoomId) return;
+  if (!payload.playerId) {
+    console.error('useRoomRealtime: Player ID missing from PLAYER_LEFT payload');
+    return;
+  }
 
-  // Fetch updated room data to reflect the player leaving
-  return getRoomWithPlayersAction(currentRoomId).then(response => {
-    if (response.success && response.room) {
-      console.log('useRoomRealtime: Updating players after PLAYER_LEFT', response.room.players);
-      setPlayersInRoom(response.room.players || []);
-    } else {
-      console.error('useRoomRealtime: Failed to fetch room after PLAYER_LEFT', response.error);
-    }
-  });
+  // Filter out the player who left
+  const updatedPlayers = currentPlayers.filter(player => player.id !== payload.playerId);
+  
+  console.log('useRoomRealtime: Updating players after PLAYER_LEFT', updatedPlayers);
+  setPlayersInRoom(updatedPlayers);
 }
 
 /**
@@ -86,18 +98,32 @@ function handleCardSelected(
   setPlayersInRoom: (players: Player[]) => void
 ) {
   console.log('Card selected event received (from hook)', payload);
-  const currentRoomId = useGameStore.getState().room?.id;
+  const gameState = useGameStore.getState();
+  const currentRoomId = gameState.room?.id;
+  const currentPlayers = gameState.playersInRoom;
+  
   if (!currentRoomId) return;
+  if (!payload.playerId || !payload.selectedCardIds) {
+    console.error('useRoomRealtime: Required data missing from CARD_SELECTED payload');
+    return;
+  }
 
-  // Fetch updated room data to reflect card selections
-  return getRoomWithPlayersAction(currentRoomId).then(response => {
-    if (response.success && response.room) {
-      console.log('useRoomRealtime: Updating players after CARD_SELECTED', response.room.players);
-      setPlayersInRoom(response.room.players || []);
-    } else {
-      console.error('useRoomRealtime: Failed to fetch room after CARD_SELECTED', response.error);
-    }
-  });
+  // Find the player who selected the card
+  const playerIndex = currentPlayers.findIndex(player => player.id === payload.playerId);
+  if (playerIndex === -1) {
+    console.error('useRoomRealtime: Player not found for CARD_SELECTED event');
+    return;
+  }
+
+  // Create a new players array with the updated player
+  const updatedPlayers = [...currentPlayers];
+  updatedPlayers[playerIndex] = {
+    ...updatedPlayers[playerIndex],
+    selectedCardIds: payload.selectedCardIds
+  };
+  
+  console.log('useRoomRealtime: Updating players after CARD_SELECTED', updatedPlayers);
+  setPlayersInRoom(updatedPlayers);
 }
 
 /**
@@ -128,20 +154,22 @@ function setupSubscriptions(
   };
 
   // Subscribe to PLAYER_JOINED events
-  subscribeAndTrack(RealtimeEventEnum.PLAYER_JOINED, payload =>
+  subscribeAndTrack(RealtimeEventEnum.PLAYER_JOINED, (payload) =>
     handlePlayerJoined(payload, setPlayersInRoom)
   );
 
   // Subscribe to PLAYER_LEFT events
-  subscribeAndTrack(RealtimeEventEnum.PLAYER_LEFT, payload =>
+  subscribeAndTrack(RealtimeEventEnum.PLAYER_LEFT, (payload) =>
     handlePlayerLeft(payload, setPlayersInRoom)
   );
 
   // Subscribe to GAME_STARTED events
-  subscribeAndTrack(RealtimeEventEnum.GAME_STARTED, payload => handleGameStarted(payload, setRoom));
+  subscribeAndTrack(RealtimeEventEnum.GAME_STARTED, (payload) =>
+    handleGameStarted(payload, setRoom)
+  );
 
   // Subscribe to CARD_SELECTED events
-  subscribeAndTrack(RealtimeEventEnum.CARD_SELECTED, payload =>
+  subscribeAndTrack(RealtimeEventEnum.CARD_SELECTED, (payload) =>
     handleCardSelected(payload, setPlayersInRoom)
   );
 
@@ -156,7 +184,9 @@ export function useRoomRealtime(roomId: string | undefined) {
   useEffect(() => {
     // Don't proceed if roomId is not yet available
     if (!roomId) {
-      console.log('useRoomRealtime: No roomId provided, skipping subscription setup.');
+      console.log(
+        'useRoomRealtime: No roomId provided, skipping subscription setup.'
+      );
       return;
     }
 
@@ -168,7 +198,9 @@ export function useRoomRealtime(roomId: string | undefined) {
 
     // Create a timeout to delay subscription initialization
     const timer = setTimeout(() => {
-      console.log(`useRoomRealtime: Initializing subscriptions for room ${roomId} after delay`);
+      console.log(
+        `useRoomRealtime: Initializing subscriptions for room ${roomId} after delay`
+      );
 
       // Setup all subscriptions and get unsubscribe functions
       unsubscribeFunctions = setupSubscriptions(
@@ -195,7 +227,7 @@ export function useRoomRealtime(roomId: string | undefined) {
         console.log(
           `useRoomRealtime: Cleaning up ${unsubscribeFunctions.length} active subscriptions for room ${roomId}`
         );
-        unsubscribeFunctions.forEach(unsub => {
+        unsubscribeFunctions.forEach((unsub) => {
           unsub(); // Call the unsubscribe function
         });
       }

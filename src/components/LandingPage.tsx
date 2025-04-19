@@ -6,10 +6,13 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useGameStore } from '@/stores/useGameStore';
 import { createRoomAction, joinRoomAction } from '../server/actions/room';
+import { useCurPlayer } from '../hooks/useCurPlayer';
 
 export function LandingPage() {
   const router = useRouter();
-  const { player, setPlayer, setRoom } = useGameStore();
+  const { playersInRoom, setPlayersInRoom, setCurPlayerId, setRoom } =
+    useGameStore();
+  const curPlayer = useCurPlayer();
   const [roomCode, setRoomCode] = useState('');
   const [error, setError] = useState('');
   const [isJoining, setIsJoining] = useState(false);
@@ -17,8 +20,8 @@ export function LandingPage() {
   const [localNickname, setLocalNickname] = useState('');
 
   useEffect(() => {
-    setLocalNickname(player?.nickname || '');
-  }, [player?.nickname]);
+    setLocalNickname(curPlayer?.nickname || '');
+  }, [curPlayer?.nickname]);
 
   const handleCreateRoom = async () => {
     if (!localNickname) {
@@ -33,8 +36,9 @@ export function LandingPage() {
       const response = await createRoomAction(localNickname);
 
       if (response.success && response.room && response.player) {
-        setPlayer({ ...response.player, cardId: response.player.cardId || '' });
         setRoom(response.room);
+        setPlayersInRoom([response.player]);
+        setCurPlayerId(response.player.id);
         router.push(`/room/${response.room.code}`);
       } else {
         setError(response.error || 'Failed to create room');
@@ -65,8 +69,9 @@ export function LandingPage() {
       const response = await joinRoomAction(roomCode, localNickname);
 
       if (response.success && response.room && response.player) {
-        setPlayer({ ...response.player, cardId: response.player.cardId || '' });
         setRoom(response.room);
+        setPlayersInRoom([...playersInRoom, response.player]);
+        setCurPlayerId(response.player.id);
         router.push(`/room/${roomCode}`);
       } else {
         setError(response.error || 'Failed to join room');
@@ -83,7 +88,9 @@ export function LandingPage() {
     <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-gradient-to-b from-blue-50 to-purple-50">
       <div className="w-full max-w-md bg-white rounded-lg shadow-lg p-6">
         <h1 className="text-3xl font-bold text-center ">Lô Tô</h1>
-        <h6 className="text-sm text-center mb-6 text-gray-700">Cờ ra con mấy con mấy cờ ra</h6>
+        <h6 className="text-sm text-center mb-6 text-gray-700">
+          Cờ ra con mấy con mấy cờ ra
+        </h6>
 
         <div className="mb-6">
           <label className="block text-sm font-medium mb-2" htmlFor="nickname">
@@ -93,21 +100,24 @@ export function LandingPage() {
             id="nickname"
             placeholder="Nhập tên"
             value={localNickname}
-            onChange={e => setLocalNickname(e.target.value)}
+            onChange={(e) => setLocalNickname(e.target.value)}
           />
         </div>
 
         {isJoining ? (
           <>
             <div className="mb-6">
-              <label className="block text-sm font-medium mb-2" htmlFor="roomCode">
+              <label
+                className="block text-sm font-medium mb-2"
+                htmlFor="roomCode"
+              >
                 Mã Phòng
               </label>
               <Input
                 id="roomCode"
                 placeholder="Nhập mã phòng"
                 value={roomCode}
-                onChange={e => setRoomCode(e.target.value.toUpperCase())}
+                onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
               />
             </div>
 
@@ -141,7 +151,9 @@ export function LandingPage() {
           </div>
         )}
 
-        {error && <p className="mt-4 text-red-500 text-sm text-center">{error}</p>}
+        {error && (
+          <p className="mt-4 text-red-500 text-sm text-center">{error}</p>
+        )}
       </div>
     </div>
   );

@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { useGameStore, GameState } from '@/stores/useGameStore';
+import { useCurPlayer } from '@/hooks/useCurPlayer';
 import { PlayerList } from '@/components/PlayerList';
 import { CardSelection } from '@/components/CardSelection';
 import { LoToCard } from '@/components/LoToCard';
@@ -19,12 +20,12 @@ import { LoToCardType } from '../lib/types';
 
 export function Room() {
   const room = useGameStore((state: GameState) => state.room);
-  const player = useGameStore((state: GameState) => state.player);
+  const curPlayer = useCurPlayer();
 
   const handleLeaveRoom = async () => {
-    if (room && player) {
+    if (room && curPlayer) {
       try {
-        await leaveRoomAction(room.id, player.id);
+        await leaveRoomAction(room.id, curPlayer.id);
       } catch (error) {
         console.error('Failed to leave room:', error);
         useGameStore.getState().setGameError('Failed to leave room');
@@ -33,7 +34,7 @@ export function Room() {
   };
 
   const handleStartGame = async () => {
-    if (room && player?.isHost) {
+    if (room && curPlayer?.isHost) {
       try {
         await updateRoomStatusAction(room.id, RoomStatus.playing);
       } catch (error) {
@@ -45,7 +46,7 @@ export function Room() {
 
   // Initial room data fetch (remains the same, adjusted dependencies and logging)
   useEffect(() => {
-    if (!room || !player) {
+    if (!room || !curPlayer) {
       console.log(
         'Room component: No room or player found, cannot fetch initial data.'
       );
@@ -96,12 +97,12 @@ export function Room() {
 
     fetchInitialRoomData();
     // eslint-disable-next-line react-hooks/exhaustive-deps -- Intentional: only refetch on ID change
-  }, [room?.id, player?.id]); // Reduced dependencies
+  }, [room?.id, curPlayer?.id]); // Reduced dependencies
 
   // Use the custom hook to manage realtime subscriptions
   useRoomRealtime(room?.id);
 
-  if (!room || !player) {
+  if (!room || !curPlayer) {
     return <div className="container mx-auto p-4">Loading room details...</div>;
   }
 
@@ -112,9 +113,11 @@ export function Room() {
     );
   };
 
-  const isHost = player.isHost;
+  const isHost = curPlayer.isHost;
   const isWaiting = room.status === RoomStatus.waiting;
   const isPlaying = room.status === RoomStatus.playing;
+  console.log('🚀 ~ Room ~ isPlaying:', isPlaying);
+  console.log('🚀 ~ Room ~ player:', curPlayer);
 
   return (
     <div className="container mx-auto p-4">
@@ -152,11 +155,11 @@ export function Room() {
 
           {isWaiting && <CardSelection />}
 
-          {isPlaying && player.selectedCardIds.length > 0 && (
+          {isPlaying && curPlayer.selectedCardIds.length > 0 && (
             <div className="bg-white rounded-lg shadow p-4 mb-4">
               <h2 className="text-xl font-bold mb-4">Bảng của bạn</h2>
               <div>
-                {player.selectedCardIds.map((cardId) => (
+                {curPlayer.selectedCardIds.map((cardId) => (
                   <LoToCard
                     key={cardId}
                     card={getCardById(cardId)}

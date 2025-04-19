@@ -3,10 +3,11 @@
 import { useGameStore, GameState } from '@/stores/useGameStore';
 import { Button } from '@/components/ui/button';
 import { Player } from '@prisma/client';
+import { useCurPlayer } from '../hooks/useCurPlayer';
 
 export function PlayerList() {
   const playersInRoom = useGameStore((state: GameState) => state.playersInRoom);
-  const currentPlayer = useGameStore((state: GameState) => state.player);
+  const currentPlayer = useCurPlayer();
 
   if (!currentPlayer) return null;
 
