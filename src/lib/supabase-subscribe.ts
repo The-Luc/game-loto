@@ -26,23 +26,32 @@ function handlePlayerJoined(
 
   if (!currentRoomId) return; // Ensure room still exists in state
   if (!payload.player) {
-    console.error('useRoomRealtime: Player data missing from PLAYER_JOINED payload');
+    console.error(
+      'useRoomRealtime: Player data missing from PLAYER_JOINED payload'
+    );
     return;
   }
 
   // Convert payload data to Player type
   const newPlayer = payload.player as Player;
-  
+
   // Check if player already exists in the list (avoid duplicates)
-  const playerExists = currentPlayers.some(player => player.id === newPlayer.id);
+  const playerExists = currentPlayers.some(
+    (player) => player.id === newPlayer.id
+  );
   if (playerExists) {
-    console.log('useRoomRealtime: Player already in room list, skipping update');
+    console.log(
+      'useRoomRealtime: Player already in room list, skipping update'
+    );
     return;
   }
 
   // Add the new player to the existing players list
   const updatedPlayers = [...currentPlayers, newPlayer];
-  console.log('useRoomRealtime: Updating players after PLAYER_JOINED', updatedPlayers);
+  console.log(
+    'useRoomRealtime: Updating players after PLAYER_JOINED',
+    updatedPlayers
+  );
   setPlayersInRoom(updatedPlayers);
 }
 
@@ -57,17 +66,24 @@ function handlePlayerLeft(
   const gameState = useGameStore.getState();
   const currentRoomId = gameState.room?.id;
   const currentPlayers = gameState.playersInRoom;
-  
+
   if (!currentRoomId) return;
   if (!payload.playerId) {
-    console.error('useRoomRealtime: Player ID missing from PLAYER_LEFT payload');
+    console.error(
+      'useRoomRealtime: Player ID missing from PLAYER_LEFT payload'
+    );
     return;
   }
 
   // Filter out the player who left
-  const updatedPlayers = currentPlayers.filter(player => player.id !== payload.playerId);
-  
-  console.log('useRoomRealtime: Updating players after PLAYER_LEFT', updatedPlayers);
+  const updatedPlayers = currentPlayers.filter(
+    (player) => player.id !== payload.playerId
+  );
+
+  console.log(
+    'useRoomRealtime: Updating players after PLAYER_LEFT',
+    updatedPlayers
+  );
   setPlayersInRoom(updatedPlayers);
 }
 
@@ -101,15 +117,19 @@ function handleCardSelected(
   const gameState = useGameStore.getState();
   const currentRoomId = gameState.room?.id;
   const currentPlayers = gameState.playersInRoom;
-  
+
   if (!currentRoomId) return;
   if (!payload.playerId || !payload.selectedCardIds) {
-    console.error('useRoomRealtime: Required data missing from CARD_SELECTED payload');
+    console.error(
+      'useRoomRealtime: Required data missing from CARD_SELECTED payload'
+    );
     return;
   }
 
   // Find the player who selected the card
-  const playerIndex = currentPlayers.findIndex(player => player.id === payload.playerId);
+  const playerIndex = currentPlayers.findIndex(
+    (player) => player.id === payload.playerId
+  );
   if (playerIndex === -1) {
     console.error('useRoomRealtime: Player not found for CARD_SELECTED event');
     return;
@@ -119,11 +139,84 @@ function handleCardSelected(
   const updatedPlayers = [...currentPlayers];
   updatedPlayers[playerIndex] = {
     ...updatedPlayers[playerIndex],
-    selectedCardIds: payload.selectedCardIds
+    selectedCardIds: payload.selectedCardIds,
   };
-  
-  console.log('useRoomRealtime: Updating players after CARD_SELECTED', updatedPlayers);
+
+  console.log(
+    'useRoomRealtime: Updating players after CARD_SELECTED',
+    updatedPlayers
+  );
   setPlayersInRoom(updatedPlayers);
+}
+
+/**
+ * Helper function to handle number called events
+ */
+function handleNumberCalled(
+  payload: BroadcastPayloadMap[RealtimeEventEnum.NUMBER_CALLED],
+  setCalledNumbers: (numbers: number[]) => void
+) {
+  console.log('Number called event received (from hook)', payload);
+
+  if (!payload.number || !payload.calledNumbers) {
+    console.error(
+      'useRoomRealtime: Required data missing from NUMBER_CALLED payload'
+    );
+    return;
+  }
+
+  setCalledNumbers(payload.calledNumbers);
+}
+
+/**
+ * Helper function to handle winner declaration events
+ */
+function handleWinnerDeclared(
+  payload: BroadcastPayloadMap[RealtimeEventEnum.WINNER_DECLARED],
+  setRoom: (room: Room) => void,
+  setWinner: (player: Player | null) => void
+) {
+  console.log('Winner declared event received (from hook)', payload);
+  const gameState = useGameStore.getState();
+  const currentRoomId = gameState.room?.id;
+  const currentPlayers = gameState.playersInRoom;
+
+  if (!currentRoomId) return;
+  if (!payload.playerId || !payload.winnerName) {
+    console.error(
+      'useRoomRealtime: Required data missing from WINNER_DECLARED payload'
+    );
+    return;
+  }
+
+  // Find the player who won
+  const winningPlayer = currentPlayers.find(
+    (player) => player.id === payload.playerId
+  );
+  if (!winningPlayer) {
+    console.error(
+      'useRoomRealtime: Winning player not found for WINNER_DECLARED event'
+    );
+    return;
+  }
+
+  // Update the game state with the winner
+  setWinner(winningPlayer);
+
+  // Update the room status to ended
+  if (gameState.room) {
+    setRoom({
+      ...gameState.room,
+      status: RoomStatus.ended,
+      winnerId: payload.playerId,
+    });
+  }
+
+  // Show a toast notification for all players
+  const { toast } = require('sonner');
+  toast.success(
+    `${payload.winnerName} has won the game with a complete column! 🎉`
+  );
 }
 
 /**
@@ -133,7 +226,9 @@ function setupSubscriptions(
   roomId: string,
   supabaseRealtime: ReturnType<typeof useSupabaseRealtime>,
   setPlayersInRoom: (players: Player[]) => void,
-  setRoom: (room: Room) => void
+  setRoom: (room: Room) => void,
+  setWinner: (player: Player | null) => void,
+  setCalledNumbers: (numbers: number[]) => void
 ): (() => void)[] {
   console.log(`Setting up subscriptions for room ${roomId}`);
   const unsubscribeFunctions: (() => void)[] = [];
@@ -173,13 +268,24 @@ function setupSubscriptions(
     handleCardSelected(payload, setPlayersInRoom)
   );
 
+  // Subscribe to WINNER_DECLARED events
+  subscribeAndTrack(RealtimeEventEnum.WINNER_DECLARED, (payload) =>
+    handleWinnerDeclared(payload, setRoom, setWinner)
+  );
+
+  // Subscribe to NUMBER_CALLED events
+  subscribeAndTrack(RealtimeEventEnum.NUMBER_CALLED, (payload) =>
+    handleNumberCalled(payload, setCalledNumbers)
+  );
+
   return unsubscribeFunctions;
 }
 
 export function useRoomRealtime(roomId: string | undefined) {
   const supabaseRealtime = useSupabaseRealtime(roomId || '');
   // Access the game store state and setters
-  const { setPlayersInRoom, setRoom } = useGameStore();
+  const { setPlayersInRoom, setRoom, setWinner, setCalledNumbers } =
+    useGameStore();
 
   useEffect(() => {
     // Don't proceed if roomId is not yet available
@@ -207,7 +313,9 @@ export function useRoomRealtime(roomId: string | undefined) {
         roomId,
         supabaseRealtime,
         setPlayersInRoom,
-        setRoom
+        setRoom,
+        setWinner,
+        setCalledNumbers
       );
 
       // Mark subscription as active

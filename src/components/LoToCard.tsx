@@ -7,6 +7,7 @@ import { cn } from '../lib/utils';
 import { markNumberAction, declareWinnerAction } from '@/server/actions/room';
 import { toast } from 'sonner';
 import { useCurPlayer } from '../hooks/useCurPlayer';
+import { checkHorizontalWin } from '@/utils/winDetection';
 
 interface LoToCardProps {
   card: LoToCardType;
@@ -37,6 +38,7 @@ export function LoToCard({
 
   const [selectedNumbers, setSelectedNumbers] = useState<number[]>([]);
   const [cardSet, setCardSet] = useState<Set<number>[]>([]);
+  const [completedColumns, setCompletedColumns] = useState<number[]>([]);
 
   const currentPlayerCardIds = currentPlayer?.selectedCardIds || [];
   const hasWon = !!currentWinner;
@@ -45,6 +47,7 @@ export function LoToCard({
   useEffect(() => {
     if (!currentWinner) {
       setSelectedNumbers([]);
+      setCompletedColumns([]);
     }
   }, [currentWinner]);
 
@@ -55,8 +58,38 @@ export function LoToCard({
       currentPlayer.markedNumbers.length > 0
     ) {
       setSelectedNumbers(currentPlayer.markedNumbers);
+      // Check for completed columns when marked numbers change
+      updateCompletedColumns(currentPlayer.markedNumbers);
     }
   }, [currentPlayer?.markedNumbers]);
+
+  // Function to check and update completed columns
+  const updateCompletedColumns = (markedNumbers: number[]) => {
+    if (!card?.grid) return;
+    
+    const completed: number[] = [];
+    
+    // Check each column for completion
+    for (let c = 0; c < card.grid[0].length; c++) {
+      // Extract all numbers in this column (ignoring nulls)
+      const columnValues: number[] = [];
+      for (let r = 0; r < card.grid.length; r++) {
+        const value = card.grid[r][c];
+        if (value !== null) {
+          columnValues.push(value);
+        }
+      }
+      
+      // Check if all numbers in this column are marked
+      const allMarked = columnValues.every(num => markedNumbers.includes(num));
+      
+      if (allMarked && columnValues.length > 0) {
+        completed.push(c);
+      }
+    }
+    
+    setCompletedColumns(completed);
+  };
 
   // Setup card grid data structure for win checking
   useEffect(() => {
@@ -80,7 +113,11 @@ export function LoToCard({
       ) {
         try {
           // Optimistically update the UI
-          setSelectedNumbers([...selectedNumbers, number]);
+          const newMarkedNumbers = [...selectedNumbers, number];
+          setSelectedNumbers(newMarkedNumbers);
+          
+          // Check for completed columns with the newly marked number
+          updateCompletedColumns(newMarkedNumbers);
 
           // Call the server action to mark the number
           const response = await markNumberAction(
@@ -97,38 +134,21 @@ export function LoToCard({
             return;
           }
 
-          // Check if this number completes a column
-          const playerHasWon = checkWinning(number);
+          // Check if this number completes a row
+          const winResult = checkWinning(number);
 
-          if (playerHasWon) {
+          if (winResult.hasWon && winResult.winningNumbers) {
             try {
-              // Get all numbers in the winning column
-              let foundColumn = -1;
-              
-              // Find the column of the newly marked number
-              for (let r = 0; r < card.grid.length; r++) {
-                for (let c = 0; c < card.grid[r].length; c++) {
-                  if (card.grid[r][c] === number) {
-                    foundColumn = c;
-                    break;
-                  }
-                }
-                if (foundColumn !== -1) break;
-              }
-              
-              // Extract all numbers in this column (ignoring nulls)
-              const winningNumbers: number[] = [];
-              for (let r = 0; r < card.grid.length; r++) {
-                const value = card.grid[r][foundColumn];
-                if (value !== null) {
-                  winningNumbers.push(value);
-                }
-              }
-              
               // Call the server action to declare the winner
-              const result = await declareWinnerAction(room.id, currentPlayer.id, card.id, winningNumbers);
+              const result = await declareWinnerAction(
+                room.id, 
+                currentPlayer.id, 
+                card.id, 
+                winResult.winningNumbers
+              );
+              
               if (result.success) {
-                toast.success('You completed a column! 🎉');
+                toast.success('You completed a row! 🎉');
               } else {
                 console.error('Failed to declare winner:', result.error);
                 toast.error(result.error || 'Error declaring win');
@@ -148,49 +168,33 @@ export function LoToCard({
     }
   };
 
-  // Check if a number completes a column for win detection
-  const checkWinning = (number: number): boolean => {
+  // Check if a number completes a row (horizontal win)
+  const checkWinning = (number: number): { hasWon: boolean; winningNumbers?: number[] } => {
     // We need to have at least one marked number to check for a win
-    if (!number) return false;
+    if (!number) return { hasWon: false };
     
     // Need to know the player's marked numbers and card grid
-    if (!currentPlayer?.markedNumbers || !card.grid) return false;
+    if (!currentPlayer?.markedNumbers || !card.grid) return { hasWon: false };
     
     // Convert the 2D grid to a format we can use with our win detection
     const markedNumbers = [...selectedNumbers, number]; // Include the number just marked
 
-    // Find the position (column/row) of the last marked number
-    let foundColumn = -1;
-    let foundRow = -1;
-    
-    // Find column and row of the newly marked number
-    for (let r = 0; r < card.grid.length; r++) {
-      for (let c = 0; c < card.grid[r].length; c++) {
-        if (card.grid[r][c] === number) {
-          foundRow = r;
-          foundColumn = c;
-          break;
-        }
-      }
-      if (foundColumn !== -1) break;
+    // Check for a horizontal win (completed row)
+    const horizontalWin = checkHorizontalWin({
+      grid: card.grid,
+      markedNumbers,
+      lastMarkedNumber: number
+    });
+
+    // Return win status and details
+    if (horizontalWin.hasWon) {
+      return {
+        hasWon: true,
+        winningNumbers: horizontalWin.winningNumbers
+      };
     }
-    
-    // If we couldn't find the number in the grid
-    if (foundColumn === -1) return false;
-    
-    // Extract all numbers in this column (ignoring nulls)
-    const columnValues: number[] = [];
-    for (let r = 0; r < card.grid.length; r++) {
-      const value = card.grid[r][foundColumn];
-      if (value !== null) {
-        columnValues.push(value);
-      }
-    }
-    
-    // Check if all numbers in this column are marked
-    const allValuesMarked = columnValues.every(num => markedNumbers.includes(num));
-    
-    return allValuesMarked;
+
+    return { hasWon: false };
   };
 
   return (
@@ -247,6 +251,11 @@ export function LoToCard({
                           isSelected &&
                             isCalled &&
                             'bg-green-200 border-green-600 border-2 shadow-inner',
+                            
+                          // Highlight completed column
+                          completedColumns.includes(colIndex) &&
+                            cell &&
+                            'bg-green-300 border-green-700 border-2 shadow-lg',
 
                           // Styling for called but unmarked cells
                           !isSelected && isCalled && 'opacity-70 bg-yellow-50',
