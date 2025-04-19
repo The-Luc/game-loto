@@ -184,6 +184,63 @@ export async function getRoomWithPlayersAction(roomId: string) {
 }
 
 /**
+ * Call a random number in a room during gameplay
+ */
+export async function callNumberAction(roomId: string) {
+	try {
+		// Validate room exists and is in playing status
+		const room = await prisma.room.findUnique({
+			where: { id: roomId },
+		});
+
+		if (!room) {
+			return { success: false, error: 'Room not found' };
+		}
+
+		if (room.status !== RoomStatus.playing) {
+			return { success: false, error: 'Game is not in playing status' };
+		}
+
+		// Get current called numbers
+		const calledNumbers = room.calledNumbers as number[];
+
+		// Check if all numbers have been called (1-90)
+		if (calledNumbers.length >= 90) {
+			return { success: false, error: 'All numbers have already been called' };
+		}
+
+		// Generate a random number that hasn't been called yet
+		let newNumber: number;
+		do {
+			newNumber = Math.floor(Math.random() * 90) + 1; // 1-90
+		} while (calledNumbers.includes(newNumber));
+
+		// Update room's calledNumbers
+		const updatedRoom = await prisma.room.update({
+			where: { id: roomId },
+			data: {
+				calledNumbers: [...calledNumbers, newNumber]
+			}
+		});
+
+		// Broadcast the number called event
+		await supabaseRealtime.broadcast(roomId, RealtimeEventEnum.NUMBER_CALLED, {
+			number: newNumber,
+			calledNumbers: updatedRoom.calledNumbers,
+		});
+
+		return { 
+			success: true, 
+			number: newNumber, 
+			calledNumbers: updatedRoom.calledNumbers 
+		};
+	} catch (error) {
+		console.error('Failed to call number:', error);
+		return { success: false, error: 'Failed to call number' };
+	}
+}
+
+/**
  * Update room status
  */
 export async function updateRoomStatusAction(roomId: string, status: RoomStatus) {
