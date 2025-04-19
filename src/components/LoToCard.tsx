@@ -4,11 +4,9 @@ import { GameState, useGameStore } from '@/stores/useGameStore';
 import { useEffect, useState } from 'react';
 import { LoToCardType } from '../lib/types';
 import { cn } from '../lib/utils';
-import { markNumberAction } from '@/server/actions/room';
+import { markNumberAction, declareWinnerAction } from '@/server/actions/room';
 import { toast } from 'sonner';
 import { useCurPlayer } from '../hooks/useCurPlayer';
-// TODO: Implement later
-// import { declareWinnerAction } from '@/server/actions/room';
 
 interface LoToCardProps {
   card: LoToCardType;
@@ -99,14 +97,42 @@ export function LoToCard({
             return;
           }
 
-          // Check if this number completes a row
+          // Check if this number completes a column
           const playerHasWon = checkWinning(number);
 
           if (playerHasWon) {
             try {
-              // Will implement in Task 6.4
-              // await declareWinnerAction(room.id, currentPlayer.id, card.id);
-              toast.success('You completed a row! 🎉');
+              // Get all numbers in the winning column
+              let foundColumn = -1;
+              
+              // Find the column of the newly marked number
+              for (let r = 0; r < card.grid.length; r++) {
+                for (let c = 0; c < card.grid[r].length; c++) {
+                  if (card.grid[r][c] === number) {
+                    foundColumn = c;
+                    break;
+                  }
+                }
+                if (foundColumn !== -1) break;
+              }
+              
+              // Extract all numbers in this column (ignoring nulls)
+              const winningNumbers: number[] = [];
+              for (let r = 0; r < card.grid.length; r++) {
+                const value = card.grid[r][foundColumn];
+                if (value !== null) {
+                  winningNumbers.push(value);
+                }
+              }
+              
+              // Call the server action to declare the winner
+              const result = await declareWinnerAction(room.id, currentPlayer.id, card.id, winningNumbers);
+              if (result.success) {
+                toast.success('You completed a column! 🎉');
+              } else {
+                console.error('Failed to declare winner:', result.error);
+                toast.error(result.error || 'Error declaring win');
+              }
             } catch (error) {
               console.error('Failed to declare winner:', error);
               toast.error('Error detecting win');
@@ -122,26 +148,49 @@ export function LoToCard({
     }
   };
 
-  // Check if a number completes a row and thus the player wins
+  // Check if a number completes a column for win detection
   const checkWinning = (number: number): boolean => {
-    // Create a temporary copy of the card sets to avoid mutating the original state
-    const tempCardSet = cardSet.map((row) => new Set([...row]));
+    // We need to have at least one marked number to check for a win
+    if (!number) return false;
+    
+    // Need to know the player's marked numbers and card grid
+    if (!currentPlayer?.markedNumbers || !card.grid) return false;
+    
+    // Convert the 2D grid to a format we can use with our win detection
+    const markedNumbers = [...selectedNumbers, number]; // Include the number just marked
 
-    // Find which row the number belongs to
-    for (let i = 0; i < tempCardSet.length; i++) {
-      const row = tempCardSet[i];
-      if (!row.has(number)) continue;
-
-      // Remove the marked number from the set
-      row.delete(number);
-
-      // If the row is now empty (all numbers marked), player has won
-      if (row.size === 0) {
-        return true;
+    // Find the position (column/row) of the last marked number
+    let foundColumn = -1;
+    let foundRow = -1;
+    
+    // Find column and row of the newly marked number
+    for (let r = 0; r < card.grid.length; r++) {
+      for (let c = 0; c < card.grid[r].length; c++) {
+        if (card.grid[r][c] === number) {
+          foundRow = r;
+          foundColumn = c;
+          break;
+        }
       }
-      break;
+      if (foundColumn !== -1) break;
     }
-    return false;
+    
+    // If we couldn't find the number in the grid
+    if (foundColumn === -1) return false;
+    
+    // Extract all numbers in this column (ignoring nulls)
+    const columnValues: number[] = [];
+    for (let r = 0; r < card.grid.length; r++) {
+      const value = card.grid[r][foundColumn];
+      if (value !== null) {
+        columnValues.push(value);
+      }
+    }
+    
+    // Check if all numbers in this column are marked
+    const allValuesMarked = columnValues.every(num => markedNumbers.includes(num));
+    
+    return allValuesMarked;
   };
 
   return (

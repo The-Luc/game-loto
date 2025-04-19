@@ -7,6 +7,7 @@ import { handleApiResponse } from '@/lib/utils';
 import { Room } from '@/lib/types';
 import { supabaseRealtime } from '@/lib/supabase';
 import { RealtimeEventEnum } from '@/lib/enums';
+import { checkVerticalWin } from '@/utils/winDetection';
 
 type CreateRoomResponse = {
 	success: boolean;
@@ -27,6 +28,13 @@ type MarkNumberResponse = {
 	error?: string;
 	player?: Player;
 	markedNumbers?: number[];
+};
+
+type DeclareWinnerResponse = {
+	success: boolean;
+	error?: string;
+	winner?: Player;
+	winningNumbers?: number[];
 };
 
 /**
@@ -352,6 +360,130 @@ export async function markNumberAction(roomId: string, playerId: string, cardId:
 		return {
 			success: false,
 			error: 'Failed to mark number on card'
+		};
+	}
+}
+
+/**
+ * Declare a winner for a game
+ */
+export async function declareWinnerAction(roomId: string, playerId: string, cardId: string, winningNumbers: number[]): Promise<DeclareWinnerResponse> {
+	try {
+		// Guard clause: Validate input parameters
+		if (!roomId || !playerId || !cardId || !winningNumbers || winningNumbers.length === 0) {
+			return {
+				success: false,
+				error: 'Missing required parameters'
+			};
+		}
+
+		// Guard clause: Check if room exists and is in playing state
+		const room = await prisma.room.findUnique({
+			where: { id: roomId },
+		});
+
+		if (!room) {
+			return {
+				success: false,
+				error: 'Room not found'
+			};
+		}
+
+		if (room.status !== RoomStatus.playing) {
+			return {
+				success: false,
+				error: 'Game is not in playing status'
+			};
+		}
+
+		// Guard clause: Check if game already has a winner
+		if (room.winnerId) {
+			// Get the winner player details
+			const existingWinner = await prisma.player.findUnique({
+				where: { id: room.winnerId }
+			});
+
+			return {
+				success: false,
+				error: `Game already has a winner: ${existingWinner?.nickname}`,
+				winner: existingWinner || undefined
+			};
+		}
+
+		// Verify player exists and is in this room
+		const player = await prisma.player.findUnique({
+			where: { id: playerId },
+		});
+
+		if (!player) {
+			return {
+				success: false,
+				error: 'Player not found'
+			};
+		}
+
+		if (player.roomId !== roomId) {
+			return {
+				success: false,
+				error: 'Player is not in this room'
+			};
+		}
+
+		// Verify card belongs to this player
+		if (!player.selectedCardIds.includes(cardId)) {
+			return {
+				success: false,
+				error: 'Card is not selected by this player'
+			};
+		}
+
+		// Verify all winning numbers have been called and marked by this player
+		const playerMarkedNumbers = player.markedNumbers || [];
+
+		// Check if all winning numbers are in the called numbers array
+		for (const num of winningNumbers) {
+			if (!room.calledNumbers.includes(num)) {
+				return {
+					success: false,
+					error: `Number ${num} has not been called`
+				};
+			}
+
+			// Check if all winning numbers are marked by the player
+			if (!playerMarkedNumbers.includes(num)) {
+				return {
+					success: false,
+					error: `Number ${num} has not been marked by player`
+				};
+			}
+		}
+
+		// Update the room with the winner
+		const updatedRoom = await prisma.room.update({
+			where: { id: roomId },
+			data: { 
+				winnerId: playerId,
+				status: RoomStatus.ended
+			}
+		});
+
+		// Broadcast winner declared event for real-time updates
+		await supabaseRealtime.broadcast(roomId, RealtimeEventEnum.WINNER_DECLARED, {
+			playerId,
+			winnerName: player.nickname,
+			winningNumbers
+		});
+
+		return {
+			success: true,
+			winner: player,
+			winningNumbers
+		};
+	} catch (error) {
+		console.error('Failed to declare winner:', error);
+		return {
+			success: false,
+			error: 'Failed to declare winner'
 		};
 	}
 }

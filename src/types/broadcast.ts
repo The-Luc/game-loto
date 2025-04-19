@@ -67,6 +67,15 @@ export type CardUpdatedPayload = {
 };
 
 /**
+ * Payload when a player wins the game.
+ */
+export type WinnerDeclaredPayload = {
+	playerId: string;
+	winnerName: string;
+	winningNumbers: number[];
+};
+
+/**
  * A mapping between RealtimeEventEnum values and their corresponding payload types.
  * This is crucial for the generic subscribe/broadcast functions.
  */
@@ -78,6 +87,7 @@ export type BroadcastPayloadMap = {
 	[RealtimeEventEnum.NUMBER_CALLED]: NumberCalledPayload;
 	[RealtimeEventEnum.GAME_ENDED]: GameEndedPayload;
 	[RealtimeEventEnum.CARD_UPDATED]: CardUpdatedPayload;
+	[RealtimeEventEnum.WINNER_DECLARED]: WinnerDeclaredPayload;
 	// Add mappings for any other custom events
 };
 
