@@ -29,7 +29,9 @@ export function LoToCard({
   const room = useGameStore((state: GameState) => state.room);
   const currentPlayer = useGameStore((state: GameState) => state.player);
   const playersInRoom = useGameStore((state: GameState) => state.playersInRoom);
-  const currentCalledNumbers = useGameStore((state: GameState) => state.calledNumbers);
+  const currentCalledNumbers = useGameStore(
+    (state: GameState) => state.calledNumbers
+  );
   const currentWinner = useGameStore((state: GameState) => state.winner);
   const setPlayer = useGameStore((state: GameState) => state.setPlayer);
 
@@ -55,7 +57,6 @@ export function LoToCard({
   //   setCardSet(grid);
   // }, [card]);
 
-
   const handleSelectCard = async () => {
     // This code interferes with the new implementation in CardSelection.tsx
     return;
@@ -80,16 +81,16 @@ export function LoToCard({
     //   if (!selectedNumbers.includes(number) && currentCalledNumbers.includes(number)) {
     //     setSelectedNumbers([...selectedNumbers, number]);
 
-        // const playerHasWon = checkWinning(number);
+    // const playerHasWon = checkWinning(number);
 
-        // if (playerHasWon) {
-        //   try {
-        //     // await declareWinnerAction(room.id, currentPlayer.id);
-        //   } catch (error) {
-        //     console.error('Failed to declare winner:', error);
-        //   }
-        // }
-      // }
+    // if (playerHasWon) {
+    //   try {
+    //     // await declareWinnerAction(room.id, currentPlayer.id);
+    //   } catch (error) {
+    //     console.error('Failed to declare winner:', error);
+    //   }
+    // }
+    // }
     // }
   };
 
@@ -110,36 +111,42 @@ export function LoToCard({
       <div
         onClick={handleSelectCard}
         className={cn(
-          "border-2 rounded-lg p-2 relative bg-black/80",
-          selectable && "cursor-pointer hover:border-blue-500",
-          currentPlayerCardIds.includes(card.id) && selectable && "border-blue-500",
-          isShaking && "animate-shake"
+          'border-2 rounded-lg p-2 relative bg-black/80',
+          selectable && 'cursor-pointer hover:border-blue-500',
+          currentPlayerCardIds.includes(card.id) &&
+            selectable &&
+            'border-blue-500',
+          isShaking && 'animate-shake'
         )}
         style={{ pointerEvents: !selectable ? 'none' : 'auto' }}
       >
         <div className="flex flex-col">
-          {[0, 1, 2].map(groupIndex => (
+          {[0, 1, 2].map((groupIndex) => (
             <div
               key={`group-${groupIndex}`}
-              className={`grid grid-cols-9 gap-[2px] ${groupIndex < 2 ? 'mb-2' : ''}`}
+              className={`grid grid-cols-9 gap-[2px] ${groupIndex < 2 ? 'mb-[3%]' : ''}`}
             >
               {card?.grid
                 .slice(groupIndex * 3, groupIndex * 3 + 3)
                 .map((row: (number | null)[], rowIndexInGroup: number) =>
                   row.map((cell: number | null, colIndex: number) => {
                     const rowIndex = groupIndex * 3 + rowIndexInGroup;
-                    const isCalled = cell !== null && currentCalledNumbers.includes(cell);
-                    const isSelected = cell !== null && selectedNumbers.includes(cell);
+                    const isCalled =
+                      cell !== null && currentCalledNumbers.includes(cell);
+                    const isSelected =
+                      cell !== null && selectedNumbers.includes(cell);
 
                     return (
                       <div
                         key={`${rowIndex}-${colIndex}`}
                         onClick={() => handleCellClick(cell)}
                         style={{
-                          backgroundColor: cell ? '#E5E7EB' : card?.backgroundColor,
+                          backgroundColor: cell
+                            ? '#E5E7EB'
+                            : card?.backgroundColor,
                         }}
                         className={`
-                          aspect-3/3 flex items-center justify-center text-[5vmin] md:text-[1.6vmin] lg:text-[2.1vmin] font-bold font-oswald
+                          aspect-3/3 flex items-center justify-center text-[10%] font-bold font-oswald
                           ${playable && cell ? 'cursor-pointer' : ''}
                           ${
                             isSelected && isCalled

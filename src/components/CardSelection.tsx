@@ -1,7 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { LoToCard } from '@/components/LoToCard';
+import { useState, useEffect, useTransition } from 'react';
 import { cardTemplates } from '../lib/card-template';
 import { useGameStore } from '@/stores/useGameStore';
 import { Button } from '@/components/ui/button';
@@ -9,51 +8,8 @@ import { updateRoomStatusAction } from '@/server/actions/room';
 import { selectPlayerCardsAction } from '@/server/actions/player'; // Import the new action
 import { LoToCardType } from '../lib/types';
 import { toast } from 'sonner';
-
-// Card item component to separate rendering logic from the main component
-type SelectableCardProps = {
-  card: LoToCardType;
-  isSelected: boolean;
-  isSelectedByOther: boolean;
-  playerName: string;
-  selectable: boolean;
-  onClick: () => void;
-  isShaking: boolean; // Add prop for shake animation
-};
-
-const SelectableCard = ({
-  card,
-  isSelected,
-  isSelectedByOther,
-  playerName,
-  selectable,
-  onClick,
-  isShaking,
-}: SelectableCardProps) => {
-  const isCardSelected = isSelected || isSelectedByOther;
-
-  return (
-    <div
-      onClick={selectable ? onClick : undefined}
-      className={`
-        relative rounded-lg transition-all duration-300 
-        ${isSelected ? 'ring-4 ring-blue-500 scale-102' : ''}
-        ${isSelectedByOther ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:scale-102'}
-        ${isShaking ? 'animate-shake' : ''}
-      `}
-    >
-      <LoToCard card={card} selectable={selectable} />
-
-      {isCardSelected && playerName && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/50  rounded-lg">
-          <div className="bg-red-400 text-white px-10 py-2 rounded-md text-lg  border-2 border-white">
-            {playerName}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
+import { cn } from '../lib/utils';
+import { SelectableCard } from './SelectableCard';
 
 // Define the maximum number of cards a player can select
 const MAX_NUM_CARDS = 2;
@@ -68,12 +24,10 @@ export function CardSelection() {
     cardId: string;
     key: number;
   } | null>(null); // State for shake animation
-  const [isUpdating, setIsUpdating] = useState(false); // State for loading/disabled state
+  const [isPending, startTransition] = useTransition();
 
   // Function to find which player selected a specific card
   const findPlayerName = (cardId: string) => {
-    console.log('🚀 ~ findPlayerName ~ cardId:', cardId);
-    console.log('🚀 ~ findPlayerName ~ playersInRoom:', playersInRoom);
     if (selectedCardIds.includes(cardId)) return 'Thẻ của bạn';
 
     // Check which player's selectedCardIds includes the cardId
@@ -102,65 +56,47 @@ export function CardSelection() {
 
   // Handler for selecting/deselecting a card
   const handleCardSelect = async (cardId: string) => {
-    if (!player || isUpdating) return; // Prevent action if no player or already updating
+    if (!player || isPending) return; // Prevent action if no player or already updating
 
-    // Optimistically update UI state
-    let newSelectedIds: string[] = [];
-    setSelectedCardIds((prevSelectedIds) => {
-      const isSelected = prevSelectedIds.includes(cardId);
+    const isSelected = selectedCardIds.includes(cardId);
+    let finalSelectedIds: string[] = [...selectedCardIds];
 
-      if (isSelected) {
-        // Deselect: remove the card ID
-        return prevSelectedIds.filter((id) => id !== cardId);
-      }
+    if (isSelected) {
+      // Deselect: remove the card ID
+      finalSelectedIds = finalSelectedIds.filter((id) => id !== cardId);
+    } else {
+      finalSelectedIds.push(cardId);
+    }
 
-      // Select: add the card ID if limit not reached
-      if (prevSelectedIds.length < MAX_NUM_CARDS) {
-        return [...prevSelectedIds, cardId];
-      }
-
+    if (finalSelectedIds.length > MAX_NUM_CARDS) {
       // Limit reached, trigger shake animation on the clicked card
       setShakeTrigger({ cardId: cardId, key: Date.now() }); // Use key to re-trigger
       setTimeout(() => setShakeTrigger(null), 1000);
-      newSelectedIds = prevSelectedIds; // Keep the same array
-      return newSelectedIds;
-    });
+      return;
+    }
 
-    // Call server action if the selection actually changed
-    // Check length because the state update might return the same array reference if limit reached
-    if (
-      newSelectedIds.length !== selectedCardIds.length ||
-      !newSelectedIds.every((id, index) => id === selectedCardIds[index])
-    ) {
-      setIsUpdating(true);
-      try {
-        const response = await selectPlayerCardsAction(
-          player.id,
-          newSelectedIds
-        );
-        if (!response.success) {
-          console.error('Failed to update card selection:', response.error);
-          // TODO: Add user-facing error feedback (e.g., toast)
-          toast.error('Lỗi khi chọn bảng');
-          // Revert optimistic update on error
-          setSelectedCardIds(player.selectedCardIds || []);
-        } else {
-          // Update successful, local state is already correct
-          console.log(
-            'Card selection updated successfully:',
-            response.selectedCardIds
-          );
-        }
-      } catch (error) {
-        console.error('Error calling selectPlayerCardsAction:', error);
-        // TODO: Add user-facing error feedback (e.g., toast)
-        toast.error('Lỗi khi chọn bảng');
+    // Optimistically update UI state
+    setSelectedCardIds(finalSelectedIds);
+
+    startTransition(async () => {
+      const response = await selectPlayerCardsAction(
+        player.id,
+        finalSelectedIds
+      );
+
+      if (!response.success) {
+        toast.error('Lỗi khi chọn bảng', { description: response.error });
         // Revert optimistic update on error
         setSelectedCardIds(player.selectedCardIds || []);
-      } finally {
-        setIsUpdating(false);
+        return;
       }
-    }
+
+      // Update successful, local state is already correct
+      console.log(
+        'Card selection updated successfully:',
+        response.selectedCardIds
+      );
+    });
   };
 
   const startGame = async () => {
@@ -213,7 +149,7 @@ export function CardSelection() {
           </div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+        <div className={cn('grid grid-cols-3 xl:grid-cols-5 gap-6')}>
           {cardTemplates.map((card: LoToCardType) => {
             const isSelected = selectedCardIds.includes(card.id);
             // Check if any other player has this card selected
@@ -232,7 +168,7 @@ export function CardSelection() {
                 isSelected={isSelected}
                 isSelectedByOther={!!isSelectedByOther} // Ensure boolean
                 playerName={name}
-                selectable={!isSelectedByOther && !isUpdating} // Disable click while updating
+                selectable={!isSelectedByOther && !isPending} // Disable click while updating
                 onClick={() => handleCardSelect(card.id)}
                 isShaking={
                   !!(shakeTrigger?.key && shakeTrigger.cardId === card.id)

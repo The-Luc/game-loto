@@ -100,7 +100,10 @@ export default tseslint.config(
   // Custom rule overrides (applied globally after other configs)
   {
     rules: {
-      '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }], // Kept from original config
+      '@typescript-eslint/no-unused-vars': [
+        'warn',
+        { argsIgnorePattern: '^_' },
+      ], // Kept from original config
       '@typescript-eslint/explicit-module-boundary-types': 'off', // Kept from original config
       // Add any other global overrides if necessary
     },
