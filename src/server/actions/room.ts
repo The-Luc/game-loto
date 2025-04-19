@@ -593,9 +593,10 @@ export async function leaveRoomAction(roomId: string, playerId: string) {
     });
 
     // Broadcast player left event
-    // Ensure payload matches PlayerLeftPayload: only playerId
+    // Include player's nickname in the payload for UI notifications
     await supabaseRealtime.broadcast(roomId, RealtimeEventEnum.PLAYER_LEFT, {
       playerId: playerId,
+      playerNickname: playerNickname,
     });
 
     // Use stored nickname in log message

@@ -6,6 +6,7 @@ export enum RealtimeEventEnum {
 	PLAYER_LEFT = 'player-left',
 	GAME_STARTED = 'game-started',
 	GAME_ENDED = 'game-ended',
+	GAME_RESET = 'game-reset',
 	CARD_SELECTED = 'card-selected',
 	CARD_UPDATED = 'card-updated',
 	WINNER_DECLARED = 'winner-declared',

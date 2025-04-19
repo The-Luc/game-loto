@@ -23,7 +23,8 @@ export type PlayerJoinedPayload = {
  * Payload for the PLAYER_LEFT event.
  */
 export type PlayerLeftPayload = {
-	playerId: string; // Just need the ID to identify who left
+	playerId: string; // ID to identify who left
+	playerNickname: string; // Nickname to display in notifications
 };
 
 /**
@@ -58,6 +59,13 @@ export type GameEndedPayload = {
 };
 
 /**
+ * Payload when the game is reset.
+ */
+export type GameResetPayload = {
+	resetTime: string; // ISO string format
+};
+
+/**
  * Payload when a player marks a number on their card.
  */
 export type CardUpdatedPayload = {
@@ -88,6 +96,7 @@ export type BroadcastPayloadMap = {
 	[RealtimeEventEnum.CARD_SELECTED]: CardSelectedPayload;
 	[RealtimeEventEnum.NUMBER_CALLED]: NumberCalledPayload;
 	[RealtimeEventEnum.GAME_ENDED]: GameEndedPayload;
+	[RealtimeEventEnum.GAME_RESET]: GameResetPayload;
 	[RealtimeEventEnum.CARD_UPDATED]: CardUpdatedPayload;
 	[RealtimeEventEnum.WINNER_DECLARED]: WinnerDeclaredPayload;
 	// Add mappings for any other custom events

@@ -4,6 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Button } from "@/components/ui/button";
 import { LoToCard } from "./LoToCard";
 import { LoToCardType } from "@/lib/types";
+import { useEffect } from "react";
 
 interface WinModalProps {
   isOpen: boolean;
@@ -11,6 +12,7 @@ interface WinModalProps {
   winnerName: string;
   winningCard: LoToCardType;
   winningRowIndex: number;
+  onPlayAgain?: () => void;
 }
 
 export function WinModal({ 
@@ -18,7 +20,8 @@ export function WinModal({
   onCloseAction, 
   winnerName, 
   winningCard, 
-  winningRowIndex 
+  winningRowIndex,
+  onPlayAgain
 }: WinModalProps) {
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onCloseAction()}>
@@ -41,8 +44,11 @@ export function WinModal({
           </div>
         </div>
         
-        <DialogFooter className="flex justify-center">
-          <Button onClick={onCloseAction}>Đóng</Button>
+        <DialogFooter className="flex justify-center space-x-2">
+          {onPlayAgain && (
+            <Button onClick={onPlayAgain} variant="default">Chơi lại</Button>
+          )}
+          <Button onClick={onCloseAction} variant={onPlayAgain ? "outline" : "default"}>Đóng</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
