@@ -120,12 +120,12 @@ export function CardSelection() {
   };
 
   return (
-    <div className="p-4 max-w-7xl mx-auto">
+    <div className="max-w-7xl mx-auto">
       <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
         <h2 className="text-2xl font-bold text-center mb-2">
           Chọn bảng của bạn
         </h2>
-        <p className="text-center text-gray-600 mb-6">
+        <p className="text-center text-gray-600 mb-2">
           Chọn một trong những bảng sau để chơi.
         </p>
         <p className="text-center text-blue-600 font-medium mb-6">
@@ -151,7 +151,7 @@ export function CardSelection() {
           </div>
         )}
 
-        <div className={cn('grid grid-cols-3 xl:grid-cols-5 gap-6')}>
+        <div className={cn('grid grid-cols-2 xl:grid-cols-3 gap-6')}>
           {cardTemplates.map((card: LoToCardType) => {
             const isSelected = selectedCardIds.includes(card.id);
             // Check if any other player has this card selected

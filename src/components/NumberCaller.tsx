@@ -1,289 +1,81 @@
-'use client';
+// 'use client';
 
-import { NumberAnnouncer } from '@/components/NumberAnnouncer';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
-import { Slider } from '@/components/ui/slider';
-import { Switch } from '@/components/ui/switch';
-import { callNumberAction } from '@/server/actions/room';
-import { useGameStore } from '@/stores/useGameStore';
-import { RoomStatus } from '@prisma/client';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { useCurPlayer } from '../hooks/useCurPlayer';
+// import { Badge } from './ui/badge';
+// import { useGameStore } from '@/stores/useGameStore';
+// import { RoomStatus } from '@prisma/client';
+// import { useCurPlayer } from '../hooks/useCurPlayer';
 
-export function NumberCaller() {
-  // Get state from Zustand store
-  const { room, calledNumbers, addCalledNumber } = useGameStore();
-  const player = useCurPlayer();
+// export function NumberCaller() {
+//   const { room, calledNumbers } = useGameStore();
+//   const player = useCurPlayer();
+//   const isPlaying = room?.status === RoomStatus.playing;
+//   const isEnded = room?.status === RoomStatus.ended;
 
-  // Local state for UI and auto-call functionality
-  const [isAutoCallingActive, setIsAutoCallingActive] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [autoCallInterval, setAutoCallInterval] = useState<number>(5); // Default 5 seconds
-  const [justCalledNumber, setJustCalledNumber] = useState<number | null>(null);
-  const autoCallTimerRef = useRef<NodeJS.Timeout | null>(null);
+//   // Hide component if not playing or no room/player
+//   if (!room || !player || (!isPlaying && !isEnded)) return null;
 
-  const isHost = player?.isHost;
-  const isPlaying = room?.status === RoomStatus.playing;
-  const isEnded = room?.status === RoomStatus.ended;
-  const winnerNickname = useGameStore((state) => state.winner?.nickname);
+//   return (
+//     <div className="w-full px-1 py-1">
+//       <div className="flex flex-row gap-1 overflow-x-auto scrollbar-thin scrollbar-thumb-rounded-md scrollbar-thumb-muted-foreground/30">
+//         {calledNumbers.map((num, i) => (
+//           <Badge
+//             key={num + '-' + i}
+//             variant={i === calledNumbers.length - 1 ? 'default' : 'outline'}
+//             className={
+//               'text-base px-2 py-1 min-w-[32px] justify-center' +
+//               (i === calledNumbers.length - 1 ? ' bg-primary text-white font-bold' : '')
+//             }
+//           >
+//             {num}
+//           </Badge>
+//         ))}
+//       </div>
+//     </div>
+//                     {formattedInterval}
+//                   </span>
+//                 </div>
+//                 <Slider
+//                   id="interval-slider"
+//                   min={3}
+//                   max={15}
+//                   step={0.5}
+//                   value={[autoCallInterval]}
+//                   onValueChange={(values) => setAutoCallInterval(values[0])}
+//                   disabled={!isHost || isLoading}
+//                 />
+//                 <div className="flex justify-between text-xs text-muted-foreground">
+//                   <span>3s</span>
+//                   <span>15s</span>
+//                 </div>
+//               </div>
+//             </div>
 
-  // Current called number or null if none
-  const currentNumber =
-    calledNumbers.length > 0 ? calledNumbers[calledNumbers.length - 1] : null;
+//             {/* Manual Call Button */}
+//             <Button
+//               onClick={handleCallNext}
+//               disabled={isLoading || isAutoCallingActive}
+//               className="w-full h-12 sm:h-10 text-sm sm:text-base"
+//               aria-label="Call next number"
+//             >
+//               Gọi tiếp
+//             </Button>
+//           </div>
+//         )}
 
-  // Format time for display (e.g., 5.0s)
-  const formattedInterval = `${autoCallInterval.toFixed(1)}s`;
-
-  // Clean up the timer when component unmounts or auto-call is toggled off
-  useEffect(() => {
-    return () => {
-      if (autoCallTimerRef.current) {
-        clearInterval(autoCallTimerRef.current);
-        autoCallTimerRef.current = null;
-      }
-    };
-  }, []);
-
-  // Setup or clear the auto-call timer when its state changes
-  useEffect(() => {
-    // Clear existing timer if any
-    if (autoCallTimerRef.current) {
-      clearInterval(autoCallTimerRef.current);
-      autoCallTimerRef.current = null;
-    }
-
-    // Setup new timer if auto-calling is active
-    if (isAutoCallingActive && isPlaying && isHost) {
-      const intervalMs = autoCallInterval * 1000;
-      autoCallTimerRef.current = setInterval(handleCallNext, intervalMs);
-    }
-
-    // Cleanup function
-    return () => {
-      if (autoCallTimerRef.current) {
-        clearInterval(autoCallTimerRef.current);
-        autoCallTimerRef.current = null;
-      }
-    };
-  }, [isAutoCallingActive, autoCallInterval, isPlaying, isHost]);
-
-  // Hide component if not playing or no room/player
-  if (!room || !player || (!isPlaying && !isEnded)) return null;
-
-  // Handler for calling the next number
-  const handleCallNext = async () => {
-    // Guard clauses
-    if (!isHost || !room || isLoading) return;
-    if (room.status !== RoomStatus.playing) return;
-
-    try {
-      setIsLoading(true);
-
-      // Call the server action
-      const response = await callNumberAction(room.id);
-
-      if (response.success && response.number) {
-        // Update local state with the new number
-        addCalledNumber(response.number);
-        setJustCalledNumber(response.number);
-      } else {
-        // Handle errors (all 90 numbers called, etc)
-        console.error('Failed to call number:', response.error);
-
-        // If all numbers have been called, we should handle that case
-        if (response.error === 'All numbers have already been called') {
-          setIsAutoCallingActive(false);
-        }
-      }
-    } catch (error) {
-      console.error('Error calling number:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Handler for toggling auto-call
-  const handleToggleAutoCall = () => {
-    // Guard clauses
-    if (!isHost || !room) return;
-    if (room.status !== RoomStatus.playing) return;
-
-    const newAutoCallState = !isAutoCallingActive;
-    setIsAutoCallingActive(newAutoCallState);
-
-    // If turning off, clear the timer
-    if (!newAutoCallState && autoCallTimerRef.current) {
-      clearInterval(autoCallTimerRef.current);
-      autoCallTimerRef.current = null;
-    }
-  };
-
-  // Handler for announcement completion
-  const handleAnnouncementComplete = useCallback(() => {
-    // After announcement is complete, clear the just called number
-    setJustCalledNumber(null);
-  }, []);
-
-  // Reset called numbers and game state (placeholder - would use server action in production)
-  const handleStartOver = async () => {
-    if (!isHost || !room) return;
-
-    try {
-      setIsLoading(true);
-      console.log(
-        'Start over functionality will be implemented in a future task'
-      );
-    } catch (error) {
-      console.error('Error starting over:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-  // --------------------------------------------------
-
-  return (
-    <Card className="mt-4" aria-label="Number caller panel">
-      <CardHeader className="py-3 sm:py-6">
-        <CardTitle className="text-lg sm:text-xl">Gọi số</CardTitle>
-      </CardHeader>
-
-      <CardContent className="px-3 sm:px-6">
-        {/* Current or Last Called Number Display */}
-        {isPlaying && (
-          <div className="space-y-3 sm:space-y-4">
-            {currentNumber !== null && (
-              <div className="mb-4 sm:mb-6">
-                <p className="text-xs sm:text-sm text-center text-muted-foreground mb-1">
-                  {calledNumbers.length > 1 ? 'Số vừa gọi: ' : 'Số đầu tiên: '}
-                </p>
-                <div
-                  className="text-4xl sm:text-5xl md:text-6xl font-bold text-center p-3 sm:p-6 bg-primary/10 rounded-lg transition-all duration-300"
-                  aria-live="polite"
-                  aria-atomic="true"
-                >
-                  {currentNumber}
-                </div>
-
-                {/* Connect the NumberAnnouncer to handle Vietnamese TTS */}
-                <NumberAnnouncer
-                  number={
-                    justCalledNumber === null ? undefined : justCalledNumber
-                  }
-                  onAnnouncementComplete={handleAnnouncementComplete}
-                  autoAnnounce={true}
-                />
-              </div>
-            )}
-
-            {/* Called Numbers History */}
-            {calledNumbers.length > 0 && (
-              <div className="mt-4">
-                <h3 className="text-sm font-medium mb-2"> Số đã gọi: </h3>
-                <div className="flex flex-wrap gap-1 xs:gap-1.5 sm:gap-2 justify-center">
-                  {calledNumbers.map((num, index) => (
-                    <span
-                      key={`${num}-${index}`}
-                      className={`inline-flex items-center justify-center h-6 w-6 xs:h-7 xs:w-7 sm:h-8 sm:w-8 text-xs sm:text-sm 
-                        ${num === currentNumber ? 'bg-primary text-primary-foreground' : 'bg-muted'}
-                        rounded-full font-medium`}
-                      aria-label={`Number ${num}${num === currentNumber ? ', current number' : ''}`}
-                    >
-                      {num}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Winner display */}
-        {isEnded && winnerNickname && (
-          <div
-            className="py-4 sm:py-6 text-center bg-green-100 dark:bg-green-900/20 rounded-lg"
-            role="alert"
-            aria-live="polite"
-          >
-            <p className="text-xl sm:text-2xl font-bold text-green-700 dark:text-green-300">
-              🎉 Người thắng: {winnerNickname}! 🎉
-            </p>
-          </div>
-        )}
-
-        {/* Host Controls */}
-        {isHost && isPlaying && (
-          <div className="mt-6 space-y-4">
-            {/* Auto-call controls with slider */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label htmlFor="auto-call-toggle"> Tự động gọi </Label>
-                  <p className="text-sm text-muted-foreground">
-                    {isAutoCallingActive ? ` Mỗi ${formattedInterval}` : 'Tắt'}
-                  </p>
-                </div>
-                <Switch
-                  id="auto-call-toggle"
-                  checked={isAutoCallingActive}
-                  onCheckedChange={handleToggleAutoCall}
-                  disabled={isLoading}
-                />
-              </div>
-
-              {/* Interval Slider */}
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <Label htmlFor="interval-slider" className="text-sm">
-                    Thời gian chờ
-                  </Label>
-                  <span className="text-sm font-medium">
-                    {formattedInterval}
-                  </span>
-                </div>
-                <Slider
-                  id="interval-slider"
-                  min={3}
-                  max={15}
-                  step={0.5}
-                  value={[autoCallInterval]}
-                  onValueChange={(values) => setAutoCallInterval(values[0])}
-                  disabled={!isHost || isLoading}
-                />
-                <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>3s</span>
-                  <span>15s</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Manual Call Button */}
-            <Button
-              onClick={handleCallNext}
-              disabled={isLoading || isAutoCallingActive}
-              className="w-full h-12 sm:h-10 text-sm sm:text-base"
-              aria-label="Call next number"
-            >
-              Gọi tiếp
-            </Button>
-          </div>
-        )}
-
-        {/* Game End Controls */}
-        {isHost && isEnded && (
-          <div className="mt-6">
-            <Button
-              onClick={handleStartOver}
-              disabled={isLoading}
-              className="w-full h-12 sm:h-10 text-sm sm:text-base"
-              aria-label="Start a new game"
-            >
-              Làm lại từ đầu
-            </Button>
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
+//         {/* Game End Controls */}
+//         {isHost && isEnded && (
+//           <div className="mt-6">
+//             <Button
+//               onClick={handleStartOver}
+//               disabled={isLoading}
+//               className="w-full h-12 sm:h-10 text-sm sm:text-base"
+//               aria-label="Start a new game"
+//             >
+//               Làm lại từ đầu
+//             </Button>
+//           </div>
+//         )}
+//       </CardContent>
+//     </Card>
+//   );
+// }

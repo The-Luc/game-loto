@@ -2,7 +2,8 @@
 
 import { CardSelection } from '@/components/CardSelection';
 import { LoToCard } from '@/components/LoToCard';
-import { NumberCaller } from '@/components/NumberCaller';
+import { NumberDisplay } from '@/components/NumberDisplay';
+import { NumberCallerControls } from '@/components/NumberCallerControls';
 import { PlayerList } from '@/components/PlayerList';
 import { WinModal } from '@/components/WinModal';
 import { Button } from '@/components/ui/button';
@@ -270,8 +271,7 @@ export function GameController() {
 
   return (
     <div className="container mx-auto px-3 py-4 sm:p-4">
-      <div className="flex justify-between items-center mb-4 sm:mb-6">
-        <h1 className="text-xl sm:text-2xl font-bold">Mã phòng: {room.code}</h1>
+      <div className="flex items-end justify-end mb-4 sm:mb-6">
         <Button
           variant="outline"
           onClick={handleLeaveRoom}
@@ -281,13 +281,14 @@ export function GameController() {
         </Button>
       </div>
 
-      <div className="flex flex-col-reverse md:flex-row md:grid md:grid-cols-3 gap-4 md:gap-6">
+      <div className="flex flex-col gap-4 ">
         {/* Sidebar - Players and Game Log: at bottom on mobile, left side on desktop */}
-        <div className="space-y-4 md:col-span-1">
+        <div> Số phòng: {room.code}</div>
+        <div className="space-y-4 ">
           <PlayerList />
 
           {/* Game Log */}
-          <div className="bg-white rounded-lg shadow p-3 sm:p-4">
+          {/* <div className="bg-white rounded-lg shadow p-3 sm:p-4">
             <h2 className="text-lg sm:text-xl font-bold mb-2">
               Nhật ký trò chơi
             </h2>
@@ -302,43 +303,15 @@ export function GameController() {
                 <p className="text-gray-500 italic">Chưa có sự kiện nào</p>
               )}
             </div>
-          </div>
+          </div> */}
         </div>
 
-        {/* Main content - Game Content: at top on mobile, right side on desktop */}
-        <div className="md:col-span-2">
+        <div className="">
           {/* Waiting State UI */}
           {isWaiting && (
-            <WaitingRoom>
-              {isHost ? (
-                <div className="p-1 sm:p-2">
-                  <p className="mb-3 sm:mb-4 text-sm sm:text-base">
-                    Chia sẻ mã phòng với bạn bè:{' '}
-                    <span className="font-bold">{room.code}</span>
-                  </p>
-                  <Button
-                    onClick={handleStartGame}
-                    disabled={useGameStore
-                      .getState()
-                      .playersInRoom.some(
-                        (p) => p.selectedCardIds.length === 0
-                      )}
-                    className="h-10 sm:h-auto text-sm sm:text-base w-full sm:w-auto"
-                  >
-                    Bắt đầu trò chơi
-                  </Button>
-                  {useGameStore
-                    .getState()
-                    .playersInRoom.some(
-                      (p) => p.selectedCardIds.length === 0
-                    ) && (
-                    <p className="text-amber-600 mt-2 text-xs sm:text-sm">
-                      Một số người chơi chưa chọn bảng
-                    </p>
-                  )}
-                </div>
-              ) : (
-                <div className="p-1 sm:p-2">
+            <div>
+              {!isHost && (
+                <div className="">
                   <h2 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4">
                     Chờ chủ xị
                   </h2>
@@ -351,23 +324,34 @@ export function GameController() {
               <div className="mt-3 sm:mt-4">
                 <CardSelection />
               </div>
-            </WaitingRoom>
+            </div>
           )}
 
           {/* Playing State UI */}
           {isPlaying && (
             <GamePlay>
+              {/* Sticky NumberCaller at the top, always visible */}
+              <div className="sticky top-0 z-20 bg-background pb-2">
+                <NumberDisplay />
+              </div>
               {curPlayer.selectedCardIds.length > 0 ? (
-                <div>
+                <div className="w-full flex flex-col items-center justify-center">
                   <h2 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4">
                     Bảng của bạn
                   </h2>
-                  <div className="space-y-3 sm:space-y-4">
+                  {/* Responsive container for 1 or 2 cards */}
+                  <div
+                    className={
+                      'flex flex-row gap-4 w-full justify-center items-center max-h-[60vh]'
+                    }
+                  >
                     {curPlayer.selectedCardIds.map((cardId) => (
                       <LoToCard
                         key={cardId}
                         card={getCardById(cardId)}
                         playable={true}
+                        className="w-full max-w-[400px] md:max-w-[350px] max-h-[55vh]"
+                        style={{ flex: 1, minWidth: 0 }}
                       />
                     ))}
                   </div>
@@ -382,26 +366,10 @@ export function GameController() {
                   </p>
                 </div>
               )}
-
-              {/* Number Caller Section */}
-              {!room.winnerId && (
-                <div className="mt-4 sm:mt-6">
-                  <NumberCaller />
-
-                  {/* Auto-call toggle for host */}
-                  {isHost && (
-                    <div className="mt-3 sm:mt-4 flex justify-center">
-                      <Button
-                        onClick={toggleAutoCall}
-                        variant={isAutoCalling ? 'destructive' : 'outline'}
-                        className="w-full sm:w-auto text-sm sm:text-base h-12 sm:h-10"
-                      >
-                        {isAutoCalling
-                          ? 'Dừng gọi số tự động'
-                          : 'Bắt đầu gọi số tự động'}
-                      </Button>
-                    </div>
-                  )}
+              {/* Host-only controls, below cards */}
+              {!room.winnerId && isHost && (
+                <div className="mt-3 sm:mt-4 flex justify-center">
+                  <NumberCallerControls />
                 </div>
               )}
             </GamePlay>

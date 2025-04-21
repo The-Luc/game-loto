@@ -37,6 +37,7 @@ export function NumberAnnouncer({
 
   // Announce the current number
   const announceNumber = async () => {
+    console.log('🚀 ~ announceNumber ~ number:', number);
     if (number === undefined) return;
 
     try {
@@ -48,7 +49,6 @@ export function NumberAnnouncer({
     }
   };
 
-  return;
   return (
     <div className="flex items-center gap-2">
       {number && (

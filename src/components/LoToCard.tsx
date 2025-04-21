@@ -18,7 +18,11 @@ interface LoToCardProps {
   isShaking?: boolean;
   highlightedRowIndex?: number; // New prop for highlighting a winning row
   onClick?: () => void;
+  className?: string;
+  style?: React.CSSProperties;
 }
+
+import { Card } from '@/components/ui/card';
 
 export function LoToCard({
   playable = false,
@@ -29,6 +33,8 @@ export function LoToCard({
   onClick,
   isShaking,
   highlightedRowIndex,
+  className = '',
+  style = {},
 }: LoToCardProps) {
   const room = useGameStore((state: GameState) => state.room);
   const currentPlayer = useCurPlayer();
@@ -38,7 +44,6 @@ export function LoToCard({
   const currentWinner = useGameStore((state: GameState) => state.winner);
 
   const [selectedNumbers, setSelectedNumbers] = useState<number[]>([]);
-  const [cardSet, setCardSet] = useState<Set<number>[]>([]);
   const [completedColumns, setCompletedColumns] = useState<number[]>([]);
 
   const currentPlayerCardIds = currentPlayer?.selectedCardIds || [];
@@ -93,18 +98,6 @@ export function LoToCard({
 
     setCompletedColumns(completed);
   };
-
-  // Setup card grid data structure for win checking
-  useEffect(() => {
-    if (!card) return;
-    const grid = card.grid.map(
-      (row: (number | null)[]) =>
-        new Set(
-          row.filter((cell: number | null): cell is number => cell !== null)
-        )
-    );
-    setCardSet(grid);
-  }, [card]);
 
   const handleCellClick = async (number: number | null) => {
     // Only proceed if the game is playable, the number is valid, no winner yet, and we have player and room data
@@ -214,102 +207,100 @@ export function LoToCard({
   };
 
   return (
-    <div>
-      <div
-        className={cn(
-          'border-2 rounded-lg p-1 xs:p-2 relative bg-black/80',
+    <Card
+      className={cn(
+        'border-2 rounded-lg p-1 xs:p-2 relative bg-black/80',
+        selectable && 'cursor-pointer hover:border-blue-500 transition-colors',
+        currentPlayerCardIds.includes(card.id) &&
           selectable &&
-            'cursor-pointer hover:border-blue-500 transition-colors',
-          currentPlayerCardIds.includes(card.id) &&
-            selectable &&
-            'border-blue-500',
-          isShaking && 'animate-shake',
-          'touch-manipulation' // Better touch behavior
-        )}
-        style={{ pointerEvents: !selectable ? 'none' : 'auto' }}
-      >
-        <div className="flex flex-col">
-          {[0, 1, 2].map((groupIndex) => (
-            <div
-              key={`group-${groupIndex}`}
-              className={`grid grid-cols-9 gap-[1px] xs:gap-[2px] sm:gap-1 ${groupIndex < 2 ? 'mb-2 xs:mb-[3%]' : ''}`}
-            >
-              {card?.grid
-                .slice(groupIndex * 3, groupIndex * 3 + 3)
-                .map((row: (number | null)[], rowIndexInGroup: number) =>
-                  row.map((cell: number | null, colIndex: number) => {
-                    const rowIndex = groupIndex * 3 + rowIndexInGroup;
-                    const isCalled =
-                      cell !== null && currentCalledNumbers.includes(cell);
-                    const isSelected =
-                      cell !== null && selectedNumbers.includes(cell);
+          'border-blue-500',
+        isShaking && 'animate-shake',
+        'touch-manipulation',
+        className
+      )}
+      style={{ pointerEvents: !selectable ? 'none' : 'auto', ...style }}
+    >
+      <div className="flex flex-col">
+        {[0, 1, 2].map((groupIndex) => (
+          <div
+            key={`group-${groupIndex}`}
+            className={`grid grid-cols-9 gap-[1px] xs:gap-[2px] sm:gap-1 ${groupIndex < 2 ? 'mb-2 xs:mb-[3%]' : ''}`}
+          >
+            {card?.grid
+              .slice(groupIndex * 3, groupIndex * 3 + 3)
+              .map((row: (number | null)[], rowIndexInGroup: number) =>
+                row.map((cell: number | null, colIndex: number) => {
+                  const rowIndex = groupIndex * 3 + rowIndexInGroup;
+                  const isCalled =
+                    cell !== null && currentCalledNumbers.includes(cell);
+                  const isSelected =
+                    cell !== null && selectedNumbers.includes(cell);
 
-                    return (
-                      <div
-                        key={`${rowIndex}-${colIndex}`}
-                        onClick={() => handleCellClick(cell)}
-                        role={playable && cell ? 'button' : 'cell'}
-                        tabIndex={cell && playable ? 0 : -1}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            handleCellClick(cell);
-                            e.preventDefault();
-                          }
-                        }}
-                        style={{
-                          backgroundColor: cell
-                            ? '#E5E7EB'
-                            : card?.backgroundColor,
-                        }}
-                        className={cn(
-                          // Base layout
-                          'aspect-square flex items-center justify-center',
-                          // Responsive text sizing
-                          'text-[10px] xs:text-xs sm:text-sm md:text-base font-bold font-oswald',
-                          // Touch friendly interactions
-                          'transition-all duration-200',
-                          playable &&
-                            cell &&
-                            'active:scale-95 md:hover:scale-105',
-                          // Cursor feedback for interactive cells
-                          playable &&
-                            cell &&
-                            currentCalledNumbers.includes(cell) &&
-                            'cursor-pointer hover:opacity-80',
+                  return (
+                    <div
+                      key={`${rowIndex}-${colIndex}`}
+                      onClick={() => handleCellClick(cell)}
+                      role={playable && cell ? 'button' : 'cell'}
+                      tabIndex={cell && playable ? 0 : -1}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          handleCellClick(cell);
+                          e.preventDefault();
+                        }
+                      }}
+                      style={{
+                        backgroundColor: cell
+                          ? '#E5E7EB'
+                          : card?.backgroundColor,
+                      }}
+                      className={cn(
+                        // Base layout
+                        'aspect-square flex items-center justify-center',
+                        // Responsive text sizing
+                        'text-[10px] xs:text-xs sm:text-sm md:text-base font-bold font-oswald',
+                        // Touch friendly interactions
+                        'transition-all duration-200',
+                        playable &&
+                          cell &&
+                          'active:scale-95 md:hover:scale-105',
+                        // Cursor feedback for interactive cells
+                        playable &&
+                          cell &&
+                          currentCalledNumbers.includes(cell) &&
+                          'cursor-pointer hover:opacity-80',
 
-                          // Styling for marked cells
-                          isSelected &&
-                            isCalled &&
-                            'bg-green-700! border-green-600 border-3 shadow-inner',
+                        // Styling for marked cells
+                        isSelected &&
+                          isCalled &&
+                          'bg-green-700! border-green-600 border-3 shadow-inner',
 
-                          // Highlight completed column
-                          completedColumns.includes(colIndex) &&
-                            cell &&
-                            'bg-green-500 border-green-700 border-3 shadow-lg',
+                        // Highlight completed column
+                        completedColumns.includes(colIndex) &&
+                          cell &&
+                          'bg-green-500 border-green-700 border-3 shadow-lg',
 
-                          // Highlight winning row
-                          highlightedRowIndex !== undefined &&
-                            highlightedRowIndex === rowIndex &&
-                            cell &&
-                            'bg-amber-300 border-amber-600 border-2 shadow-lg animate-pulse',
+                        // Highlight winning row
+                        highlightedRowIndex !== undefined &&
+                          highlightedRowIndex === rowIndex &&
+                          cell &&
+                          'bg-amber-300 border-amber-600 border-2 shadow-lg animate-pulse',
 
-                          // Highlight cells that can be marked (called but not yet marked)
-                          playable &&
-                            cell &&
-                            !isSelected &&
-                            isCalled &&
-                            'ring-2 ring-yellow-400 ring-opacity-50'
-                        )}
-                      >
-                        {cell || ''}
-                      </div>
-                    );
-                  })
-                )}
-            </div>
-          ))}
-        </div>
+                        // Highlight cells that can be marked (called but not yet marked)
+                        playable &&
+                          cell &&
+                          !isSelected &&
+                          isCalled &&
+                          'ring-2 ring-yellow-400 ring-opacity-50'
+                      )}
+                    >
+                      {cell || ''}
+                    </div>
+                  );
+                })
+              )}
+          </div>
+        ))}
       </div>
-    </div>
+    </Card>
   );
 }
