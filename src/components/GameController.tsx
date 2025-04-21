@@ -7,13 +7,7 @@ import { NumberCallerControls } from '@/components/NumberCallerControls';
 import { PlayerList } from '@/components/PlayerList';
 import { WinModal } from '@/components/WinModal';
 import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useCurPlayer } from '@/hooks/useCurPlayer';
 import { cardTemplates } from '@/lib/card-template';
 import { useRoomRealtime } from '@/lib/supabase-subscribe';
@@ -28,11 +22,6 @@ import { GameState, useGameStore } from '@/stores/useGameStore';
 import { RoomStatus } from '@prisma/client';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-
-// Game view components
-const WaitingRoom = ({ children }: { children: React.ReactNode }) => (
-  <div className="bg-white rounded-lg shadow p-4 mb-4">{children}</div>
-);
 
 const GamePlay = ({ children }: { children: React.ReactNode }) => (
   <div className="bg-white rounded-lg shadow p-4 mb-4">{children}</div>
@@ -60,10 +49,7 @@ export function GameController() {
 
   // Add to game log
   const addToGameLog = (message: string) => {
-    setGameLog((prev) => [
-      ...prev,
-      `${new Date().toLocaleTimeString()}: ${message}`,
-    ]);
+    setGameLog((prev) => [...prev, `${new Date().toLocaleTimeString()}: ${message}`]);
   };
 
   const handleLeaveRoom = async () => {
@@ -78,30 +64,6 @@ export function GameController() {
     }
   };
 
-  const handleStartGame = async () => {
-    if (room && curPlayer?.isHost) {
-      try {
-        // Check if all players have selected cards
-        const allPlayersHaveCards = useGameStore
-          .getState()
-          .playersInRoom.every((p) => p.selectedCardIds.length > 0);
-
-        if (!allPlayersHaveCards) {
-          toast.warning('Không thể bắt đầu! Một số người chơi chưa chọn bảng.');
-          return;
-        }
-
-        await updateRoomStatusAction(room.id, RoomStatus.playing);
-        addToGameLog('Trò chơi bắt đầu');
-        toast.success('Trò chơi đã bắt đầu!');
-      } catch (error) {
-        console.error('Failed to start game:', error);
-        useGameStore.getState().setGameError('Failed to start game');
-        toast.error('Không thể bắt đầu trò chơi. Vui lòng thử lại.');
-      }
-    }
-  };
-
   // Show confirmation dialog before resetting
   const showResetConfirmationDialog = () => {
     setShowResetConfirmation(true);
@@ -109,6 +71,7 @@ export function GameController() {
 
   // Actual game reset handler
   const handlePlayAgain = async () => {
+    console.log('hik');
     if (room && curPlayer?.isHost) {
       try {
         await updateRoomStatusAction(room.id, RoomStatus.waiting);
@@ -130,8 +93,7 @@ export function GameController() {
 
   // Auto-call number for host
   const [isAutoCalling, setIsAutoCalling] = useState(false);
-  const [autoCallInterval, setAutoCallInterval] =
-    useState<NodeJS.Timeout | null>(null);
+  const [autoCallInterval, setAutoCallInterval] = useState<NodeJS.Timeout | null>(null);
 
   const toggleAutoCall = () => {
     if (isAutoCalling) {
@@ -182,9 +144,7 @@ export function GameController() {
   // Initial room data fetch
   useEffect(() => {
     if (!room || !curPlayer) {
-      console.log(
-        'GameController component: No room or player found, cannot fetch initial data.'
-      );
+      console.log('GameController component: No room or player found, cannot fetch initial data.');
       return;
     }
 
@@ -192,9 +152,7 @@ export function GameController() {
     const fetchInitialRoomData = async () => {
       try {
         if (!room?.id) {
-          console.error(
-            'GameController component: Cannot fetch data without room ID.'
-          );
+          console.error('GameController component: Cannot fetch data without room ID.');
           return;
         }
 
@@ -227,15 +185,8 @@ export function GameController() {
           addToGameLog('Trò chơi đã kết thúc');
         }
       } catch (error) {
-        console.error(
-          'GameController component: Failed to fetch initial room data - Network/unexpected error:',
-          error
-        );
-        useGameStore
-          .getState()
-          .setGameError(
-            'An unexpected error occurred while loading room details.'
-          );
+        console.error('GameController component: Failed to fetch initial room data - Network/unexpected error:', error);
+        useGameStore.getState().setGameError('An unexpected error occurred while loading room details.');
       }
     };
 
@@ -258,10 +209,7 @@ export function GameController() {
   }
 
   const getCardById = (cardId: string) => {
-    return (
-      cardTemplates.find((c) => c.id === cardId) ||
-      ([] as unknown as LoToCardType)
-    );
+    return cardTemplates.find((c) => c.id === cardId) || ([] as unknown as LoToCardType);
   };
 
   const isHost = curPlayer.isHost;
@@ -272,11 +220,7 @@ export function GameController() {
   return (
     <div className="container mx-auto px-3 py-4 sm:p-4">
       <div className="flex items-end justify-end mb-4 sm:mb-6">
-        <Button
-          variant="outline"
-          onClick={handleLeaveRoom}
-          className="text-sm sm:text-base"
-        >
+        <Button variant="outline" onClick={handleLeaveRoom} className="text-sm sm:text-base">
           Thoát
         </Button>
       </div>
@@ -312,13 +256,8 @@ export function GameController() {
             <div>
               {!isHost && (
                 <div className="">
-                  <h2 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4">
-                    Chờ chủ xị
-                  </h2>
-                  <p className="text-sm sm:text-base">
-                    Chủ xị sẽ bắt đầu trò chơi khi tất cả mọi người đã chọn
-                    bảng.
-                  </p>
+                  <h2 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4">Chờ chủ xị</h2>
+                  <p className="text-sm sm:text-base">Chủ xị sẽ bắt đầu trò chơi khi tất cả mọi người đã chọn bảng.</p>
                 </div>
               )}
               <div className="mt-3 sm:mt-4">
@@ -336,15 +275,9 @@ export function GameController() {
               </div>
               {curPlayer.selectedCardIds.length > 0 ? (
                 <div className="w-full flex flex-col items-center justify-center">
-                  <h2 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4">
-                    Bảng của bạn
-                  </h2>
+                  <h2 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4">Bảng của bạn</h2>
                   {/* Responsive container for 1 or 2 cards */}
-                  <div
-                    className={
-                      'flex flex-row gap-4 w-full justify-center items-center max-h-[60vh]'
-                    }
-                  >
+                  <div className={'flex flex-row gap-4 w-full justify-center items-center max-h-[60vh]'}>
                     {curPlayer.selectedCardIds.map((cardId) => (
                       <LoToCard
                         key={cardId}
@@ -358,12 +291,8 @@ export function GameController() {
                 </div>
               ) : (
                 <div className="text-center py-6 px-4 sm:p-8">
-                  <p className="text-red-500 text-base sm:text-lg">
-                    Bạn chưa chọn bảng!
-                  </p>
-                  <p className="mt-2 text-sm sm:text-base">
-                    Không thể tham gia trò chơi nếu chưa chọn bảng.
-                  </p>
+                  <p className="text-red-500 text-base sm:text-lg">Bạn chưa chọn bảng!</p>
+                  <p className="mt-2 text-sm sm:text-base">Không thể tham gia trò chơi nếu chưa chọn bảng.</p>
                 </div>
               )}
               {/* Host-only controls, below cards */}
@@ -379,12 +308,8 @@ export function GameController() {
           {isEnded && (
             <GameEnded>
               <div className="text-center mb-3 sm:mb-4">
-                <h2 className="text-lg sm:text-xl font-bold mb-2">
-                  Trò chơi kết thúc!
-                </h2>
-                <p className="text-sm sm:text-base">
-                  Người chiến thắng đã được xác định
-                </p>
+                <h2 className="text-lg sm:text-xl font-bold mb-2">Trò chơi kết thúc!</h2>
+                <p className="text-sm sm:text-base">Người chiến thắng đã được xác định</p>
               </div>
               {curPlayer?.isHost && (
                 <div className="flex justify-center">
@@ -414,10 +339,7 @@ export function GameController() {
       )}
 
       {/* Reset Game Confirmation Dialog */}
-      <Dialog
-        open={showResetConfirmation}
-        onOpenChange={setShowResetConfirmation}
-      >
+      <Dialog open={showResetConfirmation} onOpenChange={setShowResetConfirmation}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Xác nhận bắt đầu lại</DialogTitle>
@@ -425,15 +347,11 @@ export function GameController() {
           <div className="py-4">
             <p>Bạn có chắc chắn muốn bắt đầu trò chơi mới?</p>
             <p className="mt-2 text-sm text-gray-500">
-              Tất cả số đã gọi và đánh dấu sẽ bị xóa, nhưng người chơi sẽ vẫn ở
-              trong phòng.
+              Tất cả số đã gọi và đánh dấu sẽ bị xóa, nhưng người chơi sẽ vẫn ở trong phòng.
             </p>
           </div>
           <DialogFooter className="flex space-x-2 justify-end">
-            <Button
-              variant="outline"
-              onClick={() => setShowResetConfirmation(false)}
-            >
+            <Button variant="outline" onClick={() => setShowResetConfirmation(false)}>
               Hủy
             </Button>
             <Button onClick={handlePlayAgain}>Xác nhận</Button>

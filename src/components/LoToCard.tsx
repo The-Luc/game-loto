@@ -38,9 +38,7 @@ export function LoToCard({
 }: LoToCardProps) {
   const room = useGameStore((state: GameState) => state.room);
   const currentPlayer = useCurPlayer();
-  const currentCalledNumbers = useGameStore(
-    (state: GameState) => state.calledNumbers
-  );
+  const currentCalledNumbers = useGameStore((state: GameState) => state.calledNumbers);
   const currentWinner = useGameStore((state: GameState) => state.winner);
 
   const [selectedNumbers, setSelectedNumbers] = useState<number[]>([]);
@@ -59,10 +57,7 @@ export function LoToCard({
 
   // Initialize marked numbers from player state if available
   useEffect(() => {
-    if (
-      currentPlayer?.markedNumbers &&
-      currentPlayer.markedNumbers.length > 0
-    ) {
+    if (currentPlayer?.markedNumbers && currentPlayer.markedNumbers.length > 0) {
       setSelectedNumbers(currentPlayer.markedNumbers);
       // Check for completed columns when marked numbers change
       updateCompletedColumns(currentPlayer.markedNumbers);
@@ -87,9 +82,7 @@ export function LoToCard({
       }
 
       // Check if all numbers in this column are marked
-      const allMarked = columnValues.every((num) =>
-        markedNumbers.includes(num)
-      );
+      const allMarked = columnValues.every((num) => markedNumbers.includes(num));
 
       if (allMarked && columnValues.length > 0) {
         completed.push(c);
@@ -103,10 +96,7 @@ export function LoToCard({
     // Only proceed if the game is playable, the number is valid, no winner yet, and we have player and room data
     if (playable && number && !hasWon && currentPlayer && room) {
       // Only allow marking numbers that have been called but haven't been marked already
-      if (
-        !selectedNumbers.includes(number) &&
-        currentCalledNumbers.includes(number)
-      ) {
+      if (!selectedNumbers.includes(number) && currentCalledNumbers.includes(number)) {
         try {
           // Optimistically update the UI
           const newMarkedNumbers = [...selectedNumbers, number];
@@ -116,12 +106,7 @@ export function LoToCard({
           updateCompletedColumns(newMarkedNumbers);
 
           // Call the server action to mark the number
-          const response = await markNumberAction(
-            room.id,
-            currentPlayer.id,
-            card.id,
-            number
-          );
+          const response = await markNumberAction(room.id, currentPlayer.id, card.id, number);
 
           if (!response.success) {
             // Revert optimistic update if server action fails
@@ -134,11 +119,7 @@ export function LoToCard({
           // This now returns all necessary win info (hasWon, winningNumbers, winningRowIndex)
           const winResult = checkWinning(number);
 
-          if (
-            winResult.hasWon &&
-            winResult.winningNumbers &&
-            winResult.winningRowIndex !== undefined
-          ) {
+          if (winResult.hasWon && winResult.winningNumbers && winResult.winningRowIndex !== undefined) {
             try {
               // Call the server action to declare the winner
               const result = await declareWinnerAction(
@@ -211,9 +192,7 @@ export function LoToCard({
       className={cn(
         'border-2 rounded-lg p-1 xs:p-2 relative bg-black/80',
         selectable && 'cursor-pointer hover:border-blue-500 transition-colors',
-        currentPlayerCardIds.includes(card.id) &&
-          selectable &&
-          'border-blue-500',
+        currentPlayerCardIds.includes(card.id) && selectable && 'border-blue-500',
         isShaking && 'animate-shake',
         'touch-manipulation',
         className
@@ -231,10 +210,8 @@ export function LoToCard({
               .map((row: (number | null)[], rowIndexInGroup: number) =>
                 row.map((cell: number | null, colIndex: number) => {
                   const rowIndex = groupIndex * 3 + rowIndexInGroup;
-                  const isCalled =
-                    cell !== null && currentCalledNumbers.includes(cell);
-                  const isSelected =
-                    cell !== null && selectedNumbers.includes(cell);
+                  const isCalled = cell !== null && currentCalledNumbers.includes(cell);
+                  const isSelected = cell !== null && selectedNumbers.includes(cell);
 
                   return (
                     <div
@@ -249,9 +226,7 @@ export function LoToCard({
                         }
                       }}
                       style={{
-                        backgroundColor: cell
-                          ? '#E5E7EB'
-                          : card?.backgroundColor,
+                        backgroundColor: cell ? '#E5E7EB' : card?.backgroundColor,
                       }}
                       className={cn(
                         // Base layout
@@ -260,19 +235,12 @@ export function LoToCard({
                         'text-[10px] xs:text-xs sm:text-sm md:text-base font-bold font-oswald',
                         // Touch friendly interactions
                         'transition-all duration-200',
-                        playable &&
-                          cell &&
-                          'active:scale-95 md:hover:scale-105',
+                        playable && cell && 'active:scale-95 md:hover:scale-105',
                         // Cursor feedback for interactive cells
-                        playable &&
-                          cell &&
-                          currentCalledNumbers.includes(cell) &&
-                          'cursor-pointer hover:opacity-80',
+                        playable && cell && currentCalledNumbers.includes(cell) && 'cursor-pointer hover:opacity-80',
 
                         // Styling for marked cells
-                        isSelected &&
-                          isCalled &&
-                          'bg-green-700! border-green-600 border-3 shadow-inner',
+                        isSelected && isCalled && 'bg-green-700! border-green-600 border-3 shadow-inner',
 
                         // Highlight completed column
                         completedColumns.includes(colIndex) &&
@@ -286,11 +254,7 @@ export function LoToCard({
                           'bg-amber-300 border-amber-600 border-2 shadow-lg animate-pulse',
 
                         // Highlight cells that can be marked (called but not yet marked)
-                        playable &&
-                          cell &&
-                          !isSelected &&
-                          isCalled &&
-                          'ring-2 ring-yellow-400 ring-opacity-50'
+                        playable && cell && !isSelected && isCalled && 'ring-2 ring-yellow-400 ring-opacity-50'
                       )}
                     >
                       {cell || ''}

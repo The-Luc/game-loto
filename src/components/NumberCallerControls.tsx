@@ -11,6 +11,7 @@ import { useGameStore } from '@/stores/useGameStore';
 import { RoomStatus } from '@prisma/client';
 import { useCurPlayer } from '../hooks/useCurPlayer';
 import React, { useRef, useState, useEffect } from 'react';
+import { NumberAnnouncer } from './NumberAnnouncer';
 
 export function NumberCallerControls() {
   const { room, addCalledNumber, calledNumbers } = useGameStore();
@@ -42,10 +43,7 @@ export function NumberCallerControls() {
       autoCallTimerRef.current = null;
     }
     if (isAutoCallingActive && isPlaying && isHost) {
-      autoCallTimerRef.current = setInterval(
-        handleCallNext,
-        autoCallInterval * 1000
-      );
+      autoCallTimerRef.current = setInterval(handleCallNext, autoCallInterval * 1000);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAutoCallingActive, autoCallInterval, isPlaying, isHost]);
@@ -69,20 +67,14 @@ export function NumberCallerControls() {
   return (
     <Card className="w-full max-w-md mx-auto">
       <CardHeader>
-        <span className="text-base font-semibold">
-          Điều khiển gọi số của chủ xị
-        </span>
+        <span className="text-base font-semibold">Điều khiển gọi số của chủ xị</span>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
         <div className="flex items-center gap-3">
           <Button onClick={handleCallNext} disabled={isLoading || !isPlaying}>
             Gọi số tiếp theo
           </Button>
-          <Switch
-            checked={isAutoCallingActive}
-            onCheckedChange={setIsAutoCallingActive}
-            id="auto-call-toggle"
-          />
+          <Switch checked={isAutoCallingActive} onCheckedChange={setIsAutoCallingActive} id="auto-call-toggle" />
           <Label htmlFor="auto-call-toggle">Tự động gọi số</Label>
         </div>
         <div className="flex items-center gap-3">
@@ -98,6 +90,7 @@ export function NumberCallerControls() {
           />
           <span className="font-mono text-sm">{autoCallInterval}s</span>
         </div>
+        <NumberAnnouncer number={calledNumbers.at(-1)} autoAnnounce={true} />
       </CardContent>
     </Card>
   );

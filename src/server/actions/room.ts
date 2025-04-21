@@ -40,9 +40,7 @@ type DeclareWinnerResponse = {
 /**
  * Create a new room and host player
  */
-export async function createRoomAction(
-  nickname: string
-): Promise<CreateRoomResponse> {
+export async function createRoomAction(nickname: string): Promise<CreateRoomResponse> {
   try {
     // Generate a unique room code
     const roomCode = generateRoomCode();
@@ -118,10 +116,7 @@ export async function createRoomAction(
 /**
  * Join an existing room
  */
-export async function joinRoomAction(
-  roomCode: string,
-  nickname: string
-): Promise<JoinRoomResponse> {
+export async function joinRoomAction(roomCode: string, nickname: string): Promise<JoinRoomResponse> {
   try {
     // Find the room by code
     const room = await prisma.room.findUnique({
@@ -386,13 +381,7 @@ export async function declareWinnerAction(
 ): Promise<DeclareWinnerResponse> {
   try {
     // Guard clause: Validate input parameters
-    if (
-      !roomId ||
-      !playerId ||
-      !cardId ||
-      !winningNumbers ||
-      winningNumbers.length === 0
-    ) {
+    if (!roomId || !playerId || !cardId || !winningNumbers || winningNumbers.length === 0) {
       return {
         success: false,
         error: 'Missing required parameters',
@@ -490,17 +479,13 @@ export async function declareWinnerAction(
     });
 
     // Broadcast winner declared event for real-time updates
-    await supabaseRealtime.broadcast(
-      roomId,
-      RealtimeEventEnum.WINNER_DECLARED,
-      {
-        playerId,
-        winnerName: player.nickname,
-        winningNumbers,
-        cardId,
-        winningRowIndex,
-      }
-    );
+    await supabaseRealtime.broadcast(roomId, RealtimeEventEnum.WINNER_DECLARED, {
+      playerId,
+      winnerName: player.nickname,
+      winningNumbers,
+      cardId,
+      winningRowIndex,
+    });
 
     return {
       success: true,
@@ -520,10 +505,7 @@ export async function declareWinnerAction(
 /**
  * Update room status
  */
-export async function updateRoomStatusAction(
-  roomId: string,
-  status: RoomStatus
-) {
+export async function updateRoomStatusAction(roomId: string, status: RoomStatus) {
   try {
     await prisma.room.update({
       where: { id: roomId },
@@ -575,17 +557,13 @@ export async function leaveRoomAction(roomId: string, playerId: string) {
 
     // Validate player is in the correct room
     if (player.roomId !== room.id) {
-      console.warn(
-        `leaveRoomAction: Player ${playerId} is not in room ${roomId}.`
-      );
+      console.warn(`leaveRoomAction: Player ${playerId} is not in room ${roomId}.`);
       return { success: false, error: 'Player is not in this room.' };
     }
 
     // Store nickname for logging before deleting
     const playerNickname = player.nickname;
-    console.log(
-      `leaveRoomAction: Player ${playerNickname} (${playerId}) attempting to leave room ${roomId}.`
-    );
+    console.log(`leaveRoomAction: Player ${playerNickname} (${playerId}) attempting to leave room ${roomId}.`);
 
     // Remove player from the room
     await prisma.player.delete({
@@ -600,18 +578,12 @@ export async function leaveRoomAction(roomId: string, playerId: string) {
     });
 
     // Use stored nickname in log message
-    console.log(
-      `leaveRoomAction: Player ${playerNickname} (${playerId}) successfully left room ${roomId}.`
-    );
+    console.log(`leaveRoomAction: Player ${playerNickname} (${playerId}) successfully left room ${roomId}.`);
 
     // Check remaining players (use updated player count from the room query)
-    const remainingPlayersCount = room.players.filter(
-      (p) => p.id !== playerId
-    ).length;
+    const remainingPlayersCount = room.players.filter((p) => p.id !== playerId).length;
     if (remainingPlayersCount === 0) {
-      console.log(
-        `leaveRoomAction: No players left in room ${roomId}. Deleting room.`
-      );
+      console.log(`leaveRoomAction: No players left in room ${roomId}. Deleting room.`);
       await prisma.room.delete({ where: { id: roomId } });
     } else if (player.isHost) {
       // If the leaving player was the host, handle host migration
@@ -634,9 +606,7 @@ export async function leaveRoomAction(roomId: string, playerId: string) {
           where: { id: newHost.id },
           data: { isHost: true },
         });
-        console.log(
-          `leaveRoomAction: Assigned host to ${newHost.nickname} (${newHost.id}) in room ${roomId}.`
-        );
+        console.log(`leaveRoomAction: Assigned host to ${newHost.nickname} (${newHost.id}) in room ${roomId}.`);
       }
       // No else needed here, as deletion happens if remainingPlayersCount is 0 above
     }

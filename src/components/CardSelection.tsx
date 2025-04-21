@@ -11,6 +11,7 @@ import { LoToCardType } from '../lib/types';
 import { toast } from 'sonner';
 import { cn } from '../lib/utils';
 import { SelectableCard } from './SelectableCard';
+import { RoomStatus } from '@prisma/client';
 
 // Define the maximum number of cards a player can select
 const MAX_NUM_CARDS = 2;
@@ -39,9 +40,7 @@ export function CardSelection() {
   useEffect(() => {
     if (playersInRoom && playersInRoom.length > 0) {
       // Check if all players have selected at least one card
-      const allSelected = playersInRoom.every(
-        (p) => p.selectedCardIds.length > 0
-      );
+      const allSelected = playersInRoom.every((p) => p.selectedCardIds.length > 0);
       setAllPlayersReady(allSelected);
     }
   }, [playersInRoom]);
@@ -81,10 +80,7 @@ export function CardSelection() {
     setSelectedCardIds(finalSelectedIds);
 
     startTransition(async () => {
-      const response = await selectPlayerCardsAction(
-        curPlayer.id,
-        finalSelectedIds
-      );
+      const response = await selectPlayerCardsAction(curPlayer.id, finalSelectedIds);
 
       if (!response.success) {
         toast.error('Lỗi khi chọn bảng', { description: response.error });
@@ -94,10 +90,7 @@ export function CardSelection() {
       }
 
       // Update successful, local state is already correct
-      console.log(
-        'Card selection updated successfully:',
-        response.selectedCardIds
-      );
+      console.log('Card selection updated successfully:', response.selectedCardIds);
     });
   };
 
@@ -111,8 +104,9 @@ export function CardSelection() {
         // Update the local room state
         setRoom({
           ...room,
-          status: 'playing',
+          status: RoomStatus.playing,
         });
+        toast.success('Bắt đầu trò chơi');
       }
     } catch (error) {
       console.error('Failed to start game:', error);
@@ -122,12 +116,8 @@ export function CardSelection() {
   return (
     <div className="max-w-7xl mx-auto">
       <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
-        <h2 className="text-2xl font-bold text-center mb-2">
-          Chọn bảng của bạn
-        </h2>
-        <p className="text-center text-gray-600 mb-2">
-          Chọn một trong những bảng sau để chơi.
-        </p>
+        <h2 className="text-2xl font-bold text-center mb-2">Chọn bảng của bạn</h2>
+        <p className="text-center text-gray-600 mb-2">Chọn một trong những bảng sau để chơi.</p>
         <p className="text-center text-blue-600 font-medium mb-6">
           Đã chọn {selectedCardIds.length} / {MAX_NUM_CARDS} bảng
         </p>
@@ -136,17 +126,10 @@ export function CardSelection() {
           <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
             <h3 className="font-semibold text-blue-700 mb-2">Bạn là chủ xị</h3>
             <p className="text-sm text-blue-600 mb-3">
-              Bạn có thể bắt đầu trò chơi khi tất cả các người chơi đã chọn một
-              bảng.
+              Bạn có thể bắt đầu trò chơi khi tất cả các người chơi đã chọn một bảng.
             </p>
-            <Button
-              onClick={startGame}
-              disabled={!allPlayersReady}
-              className="w-full sm:w-auto"
-            >
-              {allPlayersReady
-                ? 'Bắt đầu trò chơi'
-                : 'Đang chờ tất cả các người chơi chọn bảng...'}
+            <Button onClick={startGame} disabled={!allPlayersReady} className="w-full sm:w-auto">
+              {allPlayersReady ? 'Bắt đầu trò chơi' : 'Đang chờ tất cả các người chơi chọn bảng...'}
             </Button>
           </div>
         )}
@@ -156,11 +139,7 @@ export function CardSelection() {
             const isSelected = selectedCardIds.includes(card.id);
             // Check if any other player has this card selected
             const isSelectedByOther =
-              !isSelected &&
-              playersInRoom?.some(
-                (p) =>
-                  p.id !== curPlayer?.id && p.selectedCardIds.includes(card.id)
-              );
+              !isSelected && playersInRoom?.some((p) => p.id !== curPlayer?.id && p.selectedCardIds.includes(card.id));
             const name = findPlayerName(card.id);
 
             return (
@@ -172,9 +151,7 @@ export function CardSelection() {
                 playerName={name}
                 selectable={!isSelectedByOther && !isPending} // Disable click while updating
                 onClick={() => handleCardSelect(card.id)}
-                isShaking={
-                  !!(shakeTrigger?.key && shakeTrigger.cardId === card.id)
-                }
+                isShaking={!!(shakeTrigger?.key && shakeTrigger.cardId === card.id)}
               />
             );
           })}

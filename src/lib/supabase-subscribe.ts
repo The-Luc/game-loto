@@ -6,6 +6,7 @@ import { Player, Room, RoomStatus } from '@prisma/client';
 import { BroadcastPayloadMap } from '../types/broadcast';
 import { toast } from 'sonner';
 import confetti from 'canvas-confetti';
+import { useSpeechSynthesis } from '../hooks/useSpeechSynthesis';
 
 /**
  * Custom hook to manage Supabase realtime subscriptions for a specific room.
@@ -28,9 +29,7 @@ function handlePlayerJoined(
 
   if (!currentRoomId) return; // Ensure room still exists in state
   if (!payload.player) {
-    console.error(
-      'useRoomRealtime: Player data missing from PLAYER_JOINED payload'
-    );
+    console.error('useRoomRealtime: Player data missing from PLAYER_JOINED payload');
     return;
   }
 
@@ -38,22 +37,15 @@ function handlePlayerJoined(
   const newPlayer = payload.player as Player;
 
   // Check if player already exists in the list (avoid duplicates)
-  const playerExists = currentPlayers.some(
-    (player) => player.id === newPlayer.id
-  );
+  const playerExists = currentPlayers.some((player) => player.id === newPlayer.id);
   if (playerExists) {
-    console.log(
-      'useRoomRealtime: Player already in room list, skipping update'
-    );
+    console.log('useRoomRealtime: Player already in room list, skipping update');
     return;
   }
 
   // Add the new player to the existing players list
   const updatedPlayers = [...currentPlayers, newPlayer];
-  console.log(
-    'useRoomRealtime: Updating players after PLAYER_JOINED',
-    updatedPlayers
-  );
+  console.log('useRoomRealtime: Updating players after PLAYER_JOINED', updatedPlayers);
   setPlayersInRoom(updatedPlayers);
 }
 
@@ -71,21 +63,14 @@ function handlePlayerLeft(
 
   if (!currentRoomId) return;
   if (!payload.playerId) {
-    console.error(
-      'useRoomRealtime: Player ID missing from PLAYER_LEFT payload'
-    );
+    console.error('useRoomRealtime: Player ID missing from PLAYER_LEFT payload');
     return;
   }
 
   // Filter out the player who left
-  const updatedPlayers = currentPlayers.filter(
-    (player) => player.id !== payload.playerId
-  );
+  const updatedPlayers = currentPlayers.filter((player) => player.id !== payload.playerId);
 
-  console.log(
-    'useRoomRealtime: Updating players after PLAYER_LEFT',
-    updatedPlayers
-  );
+  console.log('useRoomRealtime: Updating players after PLAYER_LEFT', updatedPlayers);
   setPlayersInRoom(updatedPlayers);
 }
 
@@ -122,16 +107,12 @@ function handleCardSelected(
 
   if (!currentRoomId) return;
   if (!payload.playerId || !payload.selectedCardIds) {
-    console.error(
-      'useRoomRealtime: Required data missing from CARD_SELECTED payload'
-    );
+    console.error('useRoomRealtime: Required data missing from CARD_SELECTED payload');
     return;
   }
 
   // Find the player who selected the card
-  const playerIndex = currentPlayers.findIndex(
-    (player) => player.id === payload.playerId
-  );
+  const playerIndex = currentPlayers.findIndex((player) => player.id === payload.playerId);
   if (playerIndex === -1) {
     console.error('useRoomRealtime: Player not found for CARD_SELECTED event');
     return;
@@ -144,10 +125,7 @@ function handleCardSelected(
     selectedCardIds: payload.selectedCardIds,
   };
 
-  console.log(
-    'useRoomRealtime: Updating players after CARD_SELECTED',
-    updatedPlayers
-  );
+  console.log('useRoomRealtime: Updating players after CARD_SELECTED', updatedPlayers);
   setPlayersInRoom(updatedPlayers);
 }
 
@@ -156,18 +134,18 @@ function handleCardSelected(
  */
 function handleNumberCalled(
   payload: BroadcastPayloadMap[RealtimeEventEnum.NUMBER_CALLED],
-  setCalledNumbers: (numbers: number[]) => void
+  setCalledNumbers: (numbers: number[]) => void,
+  speak: (text: string) => Promise<void>
 ) {
   console.log('Number called event received (from hook)', payload);
 
   if (!payload.number || !payload.calledNumbers) {
-    console.error(
-      'useRoomRealtime: Required data missing from NUMBER_CALLED payload'
-    );
+    console.error('useRoomRealtime: Required data missing from NUMBER_CALLED payload');
     return;
   }
 
   setCalledNumbers(payload.calledNumbers);
+  speak(payload.number.toString());
 }
 
 /**
@@ -185,20 +163,14 @@ function handleWinnerDeclared(
 
   if (!currentRoomId) return;
   if (!payload.playerId || !payload.winnerName) {
-    console.error(
-      'useRoomRealtime: Required data missing from WINNER_DECLARED payload'
-    );
+    console.error('useRoomRealtime: Required data missing from WINNER_DECLARED payload');
     return;
   }
 
   // Find the player who won
-  const winningPlayer = currentPlayers.find(
-    (player) => player.id === payload.playerId
-  );
+  const winningPlayer = currentPlayers.find((player) => player.id === payload.playerId);
   if (!winningPlayer) {
-    console.error(
-      'useRoomRealtime: Winning player not found for WINNER_DECLARED event'
-    );
+    console.error('useRoomRealtime: Winning player not found for WINNER_DECLARED event');
     return;
   }
 
@@ -216,9 +188,7 @@ function handleWinnerDeclared(
 
   // Show a toast notification for all players
   const { toast } = require('sonner');
-  toast.success(
-    `${payload.winnerName} has won the game with a complete column! 🎉`
-  );
+  toast.success(`${payload.winnerName} has won the game with a complete column! 🎉`);
 }
 
 /**
@@ -230,7 +200,8 @@ function setupSubscriptions(
   setPlayersInRoom: (players: Player[]) => void,
   setRoom: (room: Room) => void,
   setWinner: (player: Player | null) => void,
-  setCalledNumbers: (numbers: number[]) => void
+  setCalledNumbers: (numbers: number[]) => void,
+  speak: (text: string) => Promise<void>
 ): (() => void)[] {
   console.log(`Setting up subscriptions for room ${roomId}`);
   const unsubscribeFunctions: (() => void)[] = [];
@@ -244,41 +215,27 @@ function setupSubscriptions(
     if (typeof unsubscribe === 'function') {
       unsubscribeFunctions.push(unsubscribe);
     } else {
-      console.warn(
-        `useRoomRealtime: Subscription for ${event} did not return a valid unsubscribe function.`
-      );
+      console.warn(`useRoomRealtime: Subscription for ${event} did not return a valid unsubscribe function.`);
     }
   };
 
   // Subscribe to PLAYER_JOINED events
-  subscribeAndTrack(RealtimeEventEnum.PLAYER_JOINED, (payload) =>
-    handlePlayerJoined(payload, setPlayersInRoom)
-  );
+  subscribeAndTrack(RealtimeEventEnum.PLAYER_JOINED, (payload) => handlePlayerJoined(payload, setPlayersInRoom));
 
   // Subscribe to PLAYER_LEFT events
-  subscribeAndTrack(RealtimeEventEnum.PLAYER_LEFT, (payload) =>
-    handlePlayerLeft(payload, setPlayersInRoom)
-  );
+  subscribeAndTrack(RealtimeEventEnum.PLAYER_LEFT, (payload) => handlePlayerLeft(payload, setPlayersInRoom));
 
   // Subscribe to GAME_STARTED events
-  subscribeAndTrack(RealtimeEventEnum.GAME_STARTED, (payload) =>
-    handleGameStarted(payload, setRoom)
-  );
+  subscribeAndTrack(RealtimeEventEnum.GAME_STARTED, (payload) => handleGameStarted(payload, setRoom));
 
   // Subscribe to CARD_SELECTED events
-  subscribeAndTrack(RealtimeEventEnum.CARD_SELECTED, (payload) =>
-    handleCardSelected(payload, setPlayersInRoom)
-  );
+  subscribeAndTrack(RealtimeEventEnum.CARD_SELECTED, (payload) => handleCardSelected(payload, setPlayersInRoom));
 
   // Subscribe to WINNER_DECLARED events
-  subscribeAndTrack(RealtimeEventEnum.WINNER_DECLARED, (payload) =>
-    handleWinnerDeclared(payload, setRoom, setWinner)
-  );
+  subscribeAndTrack(RealtimeEventEnum.WINNER_DECLARED, (payload) => handleWinnerDeclared(payload, setRoom, setWinner));
 
   // Subscribe to NUMBER_CALLED events
-  subscribeAndTrack(RealtimeEventEnum.NUMBER_CALLED, (payload) =>
-    handleNumberCalled(payload, setCalledNumbers)
-  );
+  subscribeAndTrack(RealtimeEventEnum.NUMBER_CALLED, (payload) => handleNumberCalled(payload, setCalledNumbers, speak));
 
   return unsubscribeFunctions;
 }
@@ -296,9 +253,7 @@ export function useRoomRealtime(
   uiOptions?: {
     addToGameLog?: (message: string) => void;
     setShowWinModal?: (show: boolean) => void;
-    setWinnerInfo?: (
-      info: { name: string; cardId: string; winningRowIndex: number } | null
-    ) => void;
+    setWinnerInfo?: (info: { name: string; cardId: string; winningRowIndex: number } | null) => void;
     setIsAutoCalling?: (isAutoCalling: boolean) => void;
     setAutoCallInterval?: (interval: NodeJS.Timeout | null) => void;
     autoCallInterval?: NodeJS.Timeout | null;
@@ -306,15 +261,13 @@ export function useRoomRealtime(
 ) {
   const supabaseRealtime = useSupabaseRealtime(roomId || '');
   // Access the game store state and setters
-  const { setPlayersInRoom, setRoom, setWinner, setCalledNumbers } =
-    useGameStore();
+  const { setPlayersInRoom, setRoom, setWinner, setCalledNumbers } = useGameStore();
+  const { speak } = useSpeechSynthesis();
 
   useEffect(() => {
     // Don't proceed if roomId is not yet available
     if (!roomId) {
-      console.log(
-        'useRoomRealtime: No roomId provided, skipping subscription setup.'
-      );
+      console.log('useRoomRealtime: No roomId provided, skipping subscription setup.');
       return;
     }
 
@@ -333,141 +286,108 @@ export function useRoomRealtime(
         setPlayersInRoom,
         setRoom,
         setWinner,
-        setCalledNumbers
+        setCalledNumbers,
+        speak
       );
 
       // Add UI-specific event handlers
       const uiSubscriptions: (() => void)[] = [];
 
       // Winner declared events - UI specific handling
-      if (
-        uiOptions?.setShowWinModal ||
-        uiOptions?.setWinnerInfo ||
-        uiOptions?.addToGameLog
-      ) {
-        const unsub = supabaseRealtime.subscribe(
-          RealtimeEventEnum.WINNER_DECLARED,
-          (payload) => {
-            console.log('Winner declared UI event received:', payload);
+      if (uiOptions?.setShowWinModal || uiOptions?.setWinnerInfo || uiOptions?.addToGameLog) {
+        const unsub = supabaseRealtime.subscribe(RealtimeEventEnum.WINNER_DECLARED, (payload) => {
+          console.log('Winner declared UI event received:', payload);
 
-            // Update winner info and show modal if handlers are provided
-            if (
-              uiOptions.setWinnerInfo &&
-              payload.winnerName &&
-              payload.cardId &&
-              payload.winningRowIndex !== undefined
-            ) {
-              uiOptions.setWinnerInfo({
-                name: payload.winnerName,
-                cardId: payload.cardId,
-                winningRowIndex: payload.winningRowIndex,
-              });
-            }
-
-            if (uiOptions.setShowWinModal) {
-              uiOptions.setShowWinModal(true);
-            }
-
-            if (uiOptions.addToGameLog && payload.winnerName) {
-              uiOptions.addToGameLog(`${payload.winnerName} đã chiến thắng!`);
-            }
-
-            // Trigger confetti celebration
-            confetti({
-              particleCount: 100,
-              spread: 70,
-              origin: { y: 0.6 },
+          // Update winner info and show modal if handlers are provided
+          if (
+            uiOptions.setWinnerInfo &&
+            payload.winnerName &&
+            payload.cardId &&
+            payload.winningRowIndex !== undefined
+          ) {
+            uiOptions.setWinnerInfo({
+              name: payload.winnerName,
+              cardId: payload.cardId,
+              winningRowIndex: payload.winningRowIndex,
             });
           }
-        );
+
+          if (uiOptions.setShowWinModal) {
+            uiOptions.setShowWinModal(true);
+          }
+
+          if (uiOptions.addToGameLog && payload.winnerName) {
+            uiOptions.addToGameLog(`${payload.winnerName} đã chiến thắng!`);
+          }
+
+          // Trigger confetti celebration
+          confetti({
+            particleCount: 100,
+            spread: 70,
+            origin: { y: 0.6 },
+          });
+        });
         uiSubscriptions.push(unsub);
       }
 
       // Number called events - UI specific handling
       if (uiOptions?.addToGameLog) {
-        const unsub = supabaseRealtime.subscribe(
-          RealtimeEventEnum.NUMBER_CALLED,
-          (payload) => {
-            console.log('Number called UI event received:', payload);
-            if (payload.number) {
-              uiOptions.addToGameLog?.(`Số ${payload.number} đã được gọi`);
-            }
+        const unsub = supabaseRealtime.subscribe(RealtimeEventEnum.NUMBER_CALLED, (payload) => {
+          console.log('Number called UI event received:', payload);
+          if (payload.number) {
+            uiOptions.addToGameLog?.(`Số ${payload.number} đã được gọi`);
           }
-        );
+        });
         uiSubscriptions.push(unsub);
       }
 
       // Player joined events - UI specific handling
       if (uiOptions?.addToGameLog) {
-        const unsub = supabaseRealtime.subscribe(
-          RealtimeEventEnum.PLAYER_JOINED,
-          (payload) => {
-            console.log('Player joined UI event received:', payload);
-            if (payload.player?.nickname) {
-              uiOptions.addToGameLog?.(
-                `${payload.player.nickname} đã tham gia phòng`
-              );
-              toast.info(`${payload.player.nickname} đã tham gia phòng!`);
-            }
+        const unsub = supabaseRealtime.subscribe(RealtimeEventEnum.PLAYER_JOINED, (payload) => {
+          console.log('Player joined UI event received:', payload);
+          if (payload.player?.nickname) {
+            uiOptions.addToGameLog?.(`${payload.player.nickname} đã tham gia phòng`);
+            toast.info(`${payload.player.nickname} đã tham gia phòng!`);
           }
-        );
+        });
         uiSubscriptions.push(unsub);
       }
 
       // Player left events - UI specific handling
       if (uiOptions?.addToGameLog) {
-        const unsub = supabaseRealtime.subscribe(
-          RealtimeEventEnum.PLAYER_LEFT,
-          (payload) => {
-            console.log('Player left UI event received:', payload);
-            if (payload.playerNickname) {
-              uiOptions.addToGameLog?.(
-                `${payload.playerNickname} đã rời phòng`
-              );
-              toast.info(`${payload.playerNickname} đã rời phòng`);
-            }
+        const unsub = supabaseRealtime.subscribe(RealtimeEventEnum.PLAYER_LEFT, (payload) => {
+          console.log('Player left UI event received:', payload);
+          if (payload.playerNickname) {
+            uiOptions.addToGameLog?.(`${payload.playerNickname} đã rời phòng`);
+            toast.info(`${payload.playerNickname} đã rời phòng`);
           }
-        );
+        });
         uiSubscriptions.push(unsub);
       }
 
       // Game started events - UI specific handling
       if (uiOptions?.addToGameLog) {
-        const unsub = supabaseRealtime.subscribe(
-          RealtimeEventEnum.GAME_STARTED,
-          () => {
-            console.log('Game started UI event received');
-            uiOptions.addToGameLog?.('Trò chơi đã bắt đầu');
-            toast.success('Trò chơi đã bắt đầu!');
-          }
-        );
+        const unsub = supabaseRealtime.subscribe(RealtimeEventEnum.GAME_STARTED, () => {
+          console.log('Game started UI event received');
+          uiOptions.addToGameLog?.('Trò chơi đã bắt đầu');
+          toast.success('Trò chơi đã bắt đầu!');
+        });
         uiSubscriptions.push(unsub);
       }
 
       // Game ended events - UI specific handling
-      if (
-        uiOptions?.addToGameLog ||
-        uiOptions?.setIsAutoCalling ||
-        uiOptions?.setAutoCallInterval
-      ) {
-        const unsub = supabaseRealtime.subscribe(
-          RealtimeEventEnum.GAME_ENDED,
-          () => {
-            console.log('Game ended UI event received');
-            uiOptions.addToGameLog?.('Trò chơi đã kết thúc');
+      if (uiOptions?.addToGameLog || uiOptions?.setIsAutoCalling || uiOptions?.setAutoCallInterval) {
+        const unsub = supabaseRealtime.subscribe(RealtimeEventEnum.GAME_ENDED, () => {
+          console.log('Game ended UI event received');
+          uiOptions.addToGameLog?.('Trò chơi đã kết thúc');
 
-            // Stop auto-calling if it's active
-            if (
-              uiOptions.setIsAutoCalling &&
-              uiOptions.setAutoCallInterval &&
-              uiOptions.autoCallInterval
-            ) {
-              clearInterval(uiOptions.autoCallInterval);
-              uiOptions.setAutoCallInterval(null);
-              uiOptions.setIsAutoCalling(false);
-            }
+          // Stop auto-calling if it's active
+          if (uiOptions.setIsAutoCalling && uiOptions.setAutoCallInterval && uiOptions.autoCallInterval) {
+            clearInterval(uiOptions.autoCallInterval);
+            uiOptions.setAutoCallInterval(null);
+            uiOptions.setIsAutoCalling(false);
           }
-        );
+        });
         uiSubscriptions.push(unsub);
       }
 
@@ -476,9 +396,7 @@ export function useRoomRealtime(
 
     // Create a timeout to delay subscription initialization
     const timer = setTimeout(() => {
-      console.log(
-        `useRoomRealtime: Initializing subscriptions for room ${roomId} after delay`
-      );
+      console.log(`useRoomRealtime: Initializing subscriptions for room ${roomId} after delay`);
       console.log('Check 2 ✅');
 
       // Setup all subscriptions with enhanced UI handlers
@@ -492,9 +410,7 @@ export function useRoomRealtime(
     return () => {
       // If subscription hasn't been established yet, clear the timeout
       if (!subscriptionActive) {
-        console.log(
-          `useRoomRealtime: Cleaning up timer before subscriptions were established for room ${roomId}`
-        );
+        console.log(`useRoomRealtime: Cleaning up timer before subscriptions were established for room ${roomId}`);
         clearTimeout(timer);
       } else {
         // Otherwise, clean up all active subscriptions
