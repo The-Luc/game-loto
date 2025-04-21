@@ -122,6 +122,14 @@
   }
 }
 
+@layer utilities {
+  /* Custom text size for extra small screens */
+  .text-xxs {
+    font-size: 0.625rem; /* 10px */
+    line-height: 1rem; /* 16px */
+  }
+}
+
 .rainbow-border {
   background-color: #302244;
   border: 3px solid transparent;

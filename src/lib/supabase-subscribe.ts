@@ -4,6 +4,8 @@ import { RealtimeEventEnum } from '@/lib/enums';
 import { useGameStore } from '@/stores/useGameStore';
 import { Player, Room, RoomStatus } from '@prisma/client';
 import { BroadcastPayloadMap } from '../types/broadcast';
+import { toast } from 'sonner';
+import confetti from 'canvas-confetti';
 
 /**
  * Custom hook to manage Supabase realtime subscriptions for a specific room.
@@ -281,7 +283,25 @@ function setupSubscriptions(
   return unsubscribeFunctions;
 }
 
-export function useRoomRealtime(roomId: string | undefined) {
+/**
+ * Custom hook to manage Supabase realtime subscriptions for a specific room with UI actions
+ * Handles events like player joining/leaving, game starting, and card selection.
+ * Also manages UI-specific actions like toast notifications, game logs, and confetti animations.
+ *
+ * @param roomId The ID of the room to subscribe to.
+ * @param uiOptions Options for UI-specific actions
+ */
+export function useRoomRealtime(
+  roomId: string | undefined,
+  uiOptions?: {
+    addToGameLog?: (message: string) => void;
+    setShowWinModal?: (show: boolean) => void;
+    setWinnerInfo?: (info: {name: string, cardId: string, winningRowIndex: number} | null) => void;
+    setIsAutoCalling?: (isAutoCalling: boolean) => void;
+    setAutoCallInterval?: (interval: NodeJS.Timeout | null) => void;
+    autoCallInterval?: NodeJS.Timeout | null;
+  }
+) {
   const supabaseRealtime = useSupabaseRealtime(roomId || '');
   // Access the game store state and setters
   const { setPlayersInRoom, setRoom, setWinner, setCalledNumbers } =
@@ -301,15 +321,11 @@ export function useRoomRealtime(roomId: string | undefined) {
     // Track subscription state
     let subscriptionActive = false;
     let unsubscribeFunctions: (() => void)[] = [];
+    console.log('Check 1 ✅');
 
-    // Create a timeout to delay subscription initialization
-    const timer = setTimeout(() => {
-      console.log(
-        `useRoomRealtime: Initializing subscriptions for room ${roomId} after delay`
-      );
-
-      // Setup all subscriptions and get unsubscribe functions
-      unsubscribeFunctions = setupSubscriptions(
+    // Register UI event handlers directly inside subscription callbacks
+    const enhancedSetupSubscriptions = () => {
+      const basicSubscriptions = setupSubscriptions(
         roomId,
         supabaseRealtime,
         setPlayersInRoom,
@@ -317,10 +333,137 @@ export function useRoomRealtime(roomId: string | undefined) {
         setWinner,
         setCalledNumbers
       );
+      
+      // Add UI-specific event handlers
+      const uiSubscriptions: (() => void)[] = [];
+      
+      // Winner declared events - UI specific handling
+      if (uiOptions?.setShowWinModal || uiOptions?.setWinnerInfo || uiOptions?.addToGameLog) {
+        const unsub = supabaseRealtime.subscribe(
+          RealtimeEventEnum.WINNER_DECLARED,
+          (payload) => {
+            console.log('Winner declared UI event received:', payload);
+            
+            // Update winner info and show modal if handlers are provided
+            if (uiOptions.setWinnerInfo && payload.winnerName && payload.cardId && payload.winningRowIndex !== undefined) {
+              uiOptions.setWinnerInfo({
+                name: payload.winnerName,
+                cardId: payload.cardId,
+                winningRowIndex: payload.winningRowIndex
+              });
+            }
+            
+            if (uiOptions.setShowWinModal) {
+              uiOptions.setShowWinModal(true);
+            }
+            
+            if (uiOptions.addToGameLog && payload.winnerName) {
+              uiOptions.addToGameLog(`${payload.winnerName} đã chiến thắng!`);
+            }
+            
+            // Trigger confetti celebration
+            confetti({
+              particleCount: 100,
+              spread: 70,
+              origin: { y: 0.6 }
+            });
+          }
+        );
+        uiSubscriptions.push(unsub);
+      }
+      
+      // Number called events - UI specific handling
+      if (uiOptions?.addToGameLog) {
+        const unsub = supabaseRealtime.subscribe(
+          RealtimeEventEnum.NUMBER_CALLED,
+          (payload) => {
+            console.log('Number called UI event received:', payload);
+            if (payload.number) {
+              uiOptions.addToGameLog?.(`Số ${payload.number} đã được gọi`);
+            }
+          }
+        );
+        uiSubscriptions.push(unsub);
+      }
+      
+      // Player joined events - UI specific handling
+      if (uiOptions?.addToGameLog) {
+        const unsub = supabaseRealtime.subscribe(
+          RealtimeEventEnum.PLAYER_JOINED,
+          (payload) => {
+            console.log('Player joined UI event received:', payload);
+            if (payload.player?.nickname) {
+              uiOptions.addToGameLog?.(`${payload.player.nickname} đã tham gia phòng`);
+              toast.info(`${payload.player.nickname} đã tham gia phòng!`);
+            }
+          }
+        );
+        uiSubscriptions.push(unsub);
+      }
+      
+      // Player left events - UI specific handling
+      if (uiOptions?.addToGameLog) {
+        const unsub = supabaseRealtime.subscribe(
+          RealtimeEventEnum.PLAYER_LEFT,
+          (payload) => {
+            console.log('Player left UI event received:', payload);
+            if (payload.playerNickname) {
+              uiOptions.addToGameLog?.(`${payload.playerNickname} đã rời phòng`);
+              toast.info(`${payload.playerNickname} đã rời phòng`);
+            }
+          }
+        );
+        uiSubscriptions.push(unsub);
+      }
+      
+      // Game started events - UI specific handling
+      if (uiOptions?.addToGameLog) {
+        const unsub = supabaseRealtime.subscribe(
+          RealtimeEventEnum.GAME_STARTED,
+          () => {
+            console.log('Game started UI event received');
+            uiOptions.addToGameLog?.('Trò chơi đã bắt đầu');
+            toast.success('Trò chơi đã bắt đầu!');
+          }
+        );
+        uiSubscriptions.push(unsub);
+      }
+      
+      // Game ended events - UI specific handling
+      if (uiOptions?.addToGameLog || uiOptions?.setIsAutoCalling || uiOptions?.setAutoCallInterval) {
+        const unsub = supabaseRealtime.subscribe(
+          RealtimeEventEnum.GAME_ENDED,
+          () => {
+            console.log('Game ended UI event received');
+            uiOptions.addToGameLog?.('Trò chơi đã kết thúc');
+            
+            // Stop auto-calling if it's active
+            if (uiOptions.setIsAutoCalling && uiOptions.setAutoCallInterval && uiOptions.autoCallInterval) {
+              clearInterval(uiOptions.autoCallInterval);
+              uiOptions.setAutoCallInterval(null);
+              uiOptions.setIsAutoCalling(false);
+            }
+          }
+        );
+        uiSubscriptions.push(unsub);
+      }
+      
+      return [...basicSubscriptions, ...uiSubscriptions];
+    };
+
+    // Create a timeout to delay subscription initialization
+    const timer = setTimeout(() => {
+      console.log(
+        `useRoomRealtime: Initializing subscriptions for room ${roomId} after delay`
+      );
+      console.log('Check 2 ✅');
+
+      // Setup all subscriptions with enhanced UI handlers
+      unsubscribeFunctions = enhancedSetupSubscriptions();
 
       // Mark subscription as active
       subscriptionActive = true;
-    }, 1000); // 1 second delay before setting up subscriptions
+    }, 10000); // 10 second delay before setting up subscriptions
 
     // Cleanup function: Handle both timeout and subscriptions
     return () => {
@@ -343,7 +486,7 @@ export function useRoomRealtime(roomId: string | undefined) {
       unsubscribeFunctions.length = 0;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [roomId]);
+  }, [roomId, uiOptions]);
 
   // This hook doesn't need to return anything; its purpose is to manage subscriptions side effect.
 }

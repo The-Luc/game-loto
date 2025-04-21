@@ -9,7 +9,13 @@ import { LoToCard } from '@/components/LoToCard';
 import { NumberCaller } from '@/components/NumberCaller';
 import { WinModal } from '@/components/WinModal';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { RoomStatus } from '@prisma/client';
 import {
   leaveRoomAction,
@@ -18,7 +24,6 @@ import {
   callNumberAction,
 } from '@/server/actions/room';
 import { useRoomRealtime } from '@/lib/supabase-subscribe';
-import { subscribe } from '@/lib/supabase';
 import { RealtimeEventEnum } from '@/lib/enums';
 import { cardTemplates } from '@/lib/card-template';
 import { LoToCardType } from '@/lib/types';
@@ -41,7 +46,7 @@ const GameEnded = ({ children }: { children: React.ReactNode }) => (
 export function GameController() {
   const room = useGameStore((state: GameState) => state.room);
   const curPlayer = useCurPlayer();
-  
+
   // State for modals
   const [showWinModal, setShowWinModal] = useState(false);
   const [showResetConfirmation, setShowResetConfirmation] = useState(false);
@@ -53,10 +58,13 @@ export function GameController() {
 
   // Game log state
   const [gameLog, setGameLog] = useState<string[]>([]);
-  
+
   // Add to game log
   const addToGameLog = (message: string) => {
-    setGameLog((prev) => [...prev, `${new Date().toLocaleTimeString()}: ${message}`]);
+    setGameLog((prev) => [
+      ...prev,
+      `${new Date().toLocaleTimeString()}: ${message}`,
+    ]);
   };
 
   const handleLeaveRoom = async () => {
@@ -75,13 +83,15 @@ export function GameController() {
     if (room && curPlayer?.isHost) {
       try {
         // Check if all players have selected cards
-        const allPlayersHaveCards = useGameStore.getState().playersInRoom.every((p) => p.selectedCardIds.length > 0);
-        
+        const allPlayersHaveCards = useGameStore
+          .getState()
+          .playersInRoom.every((p) => p.selectedCardIds.length > 0);
+
         if (!allPlayersHaveCards) {
           toast.warning('Không thể bắt đầu! Một số người chơi chưa chọn bảng.');
           return;
         }
-        
+
         await updateRoomStatusAction(room.id, RoomStatus.playing);
         addToGameLog('Trò chơi bắt đầu');
         toast.success('Trò chơi đã bắt đầu!');
@@ -97,7 +107,7 @@ export function GameController() {
   const showResetConfirmationDialog = () => {
     setShowResetConfirmation(true);
   };
-  
+
   // Actual game reset handler
   const handlePlayAgain = async () => {
     if (room && curPlayer?.isHost) {
@@ -121,7 +131,8 @@ export function GameController() {
 
   // Auto-call number for host
   const [isAutoCalling, setIsAutoCalling] = useState(false);
-  const [autoCallInterval, setAutoCallInterval] = useState<NodeJS.Timeout | null>(null);
+  const [autoCallInterval, setAutoCallInterval] =
+    useState<NodeJS.Timeout | null>(null);
 
   const toggleAutoCall = () => {
     if (isAutoCalling) {
@@ -153,7 +164,7 @@ export function GameController() {
           }
         }
       }, 3000); // Call a number every 3 seconds
-      
+
       setAutoCallInterval(interval);
       setIsAutoCalling(true);
       toast.success('Bắt đầu gọi số tự động');
@@ -182,7 +193,9 @@ export function GameController() {
     const fetchInitialRoomData = async () => {
       try {
         if (!room?.id) {
-          console.error('GameController component: Cannot fetch data without room ID.');
+          console.error(
+            'GameController component: Cannot fetch data without room ID.'
+          );
           return;
         }
 
@@ -205,7 +218,7 @@ export function GameController() {
 
         // update room state
         currentStore.setRoom(roomWithPlayers.room);
-        
+
         // Add game status to log
         if (roomWithPlayers.room.status === RoomStatus.waiting) {
           addToGameLog('Chờ người chơi tham gia và chọn bảng');
@@ -230,106 +243,16 @@ export function GameController() {
     fetchInitialRoomData();
   }, [room?.id, curPlayer?.id]);
 
-  // Use the custom hook to manage realtime subscriptions
-  useRoomRealtime(room?.id);
-
-  // Subscribe to game events
-  useEffect(() => {
-    if (!room?.id) return;
-    
-    // Subscribe to winner declared events
-    const unsubscribeWinner = subscribe(
-      room.id,
-      RealtimeEventEnum.WINNER_DECLARED,
-      (payload) => {
-        console.log('Winner declared event received:', payload);
-        // When a winner is declared, update state to show modal
-        setWinnerInfo({
-          name: payload.winnerName,
-          cardId: payload.cardId,
-          winningRowIndex: payload.winningRowIndex
-        });
-        setShowWinModal(true);
-        addToGameLog(`${payload.winnerName} đã chiến thắng!`);
-        
-        // Trigger confetti celebration
-        confetti({
-          particleCount: 100,
-          spread: 70,
-          origin: { y: 0.6 }
-        });
-      }
-    );
-    
-    // Subscribe to number called events
-    const unsubscribeNumberCalled = subscribe(
-      room.id,
-      RealtimeEventEnum.NUMBER_CALLED,
-      (payload) => {
-        console.log('Number called event received:', payload);
-        addToGameLog(`Số ${payload.number} đã được gọi`);
-      }
-    );
-    
-    // Subscribe to player joined events
-    const unsubscribePlayerJoined = subscribe(
-      room.id,
-      RealtimeEventEnum.PLAYER_JOINED,
-      (payload) => {
-        console.log('Player joined event received:', payload);
-        addToGameLog(`${payload.player.nickname} đã tham gia phòng`);
-        toast.info(`${payload.player.nickname} đã tham gia phòng!`);
-      }
-    );
-    
-    // Subscribe to player left events
-    const unsubscribePlayerLeft = subscribe(
-      room.id,
-      RealtimeEventEnum.PLAYER_LEFT,
-      (payload) => {
-        console.log('Player left event received:', payload);
-        addToGameLog(`${payload.playerNickname} đã rời phòng`);
-        toast.info(`${payload.playerNickname} đã rời phòng`);
-      }
-    );
-    
-    // Subscribe to game started events
-    const unsubscribeGameStarted = subscribe(
-      room.id,
-      RealtimeEventEnum.GAME_STARTED,
-      () => {
-        console.log('Game started event received');
-        addToGameLog('Trò chơi đã bắt đầu');
-        toast.success('Trò chơi đã bắt đầu!');
-      }
-    );
-    
-    // Subscribe to game ended events
-    const unsubscribeGameEnded = subscribe(
-      room.id,
-      RealtimeEventEnum.GAME_ENDED,
-      () => {
-        console.log('Game ended event received');
-        addToGameLog('Trò chơi đã kết thúc');
-        
-        // Stop auto-calling if it's active
-        if (isAutoCalling && autoCallInterval) {
-          clearInterval(autoCallInterval);
-          setAutoCallInterval(null);
-          setIsAutoCalling(false);
-        }
-      }
-    );
-    
-    return () => {
-      unsubscribeWinner();
-      unsubscribeNumberCalled();
-      unsubscribePlayerJoined();
-      unsubscribePlayerLeft();
-      unsubscribeGameStarted();
-      unsubscribeGameEnded();
-    };
-  }, [room?.id, isAutoCalling, autoCallInterval]);
+  // Use the enhanced custom hook to manage realtime subscriptions with UI actions
+  useRoomRealtime(room?.id, {
+    // UI-specific actions
+    addToGameLog,
+    setShowWinModal,
+    setWinnerInfo,
+    setIsAutoCalling,
+    setAutoCallInterval,
+    autoCallInterval
+  });
 
   if (!room || !curPlayer) {
     return <div className="container mx-auto p-4">Loading room details...</div>;
@@ -348,26 +271,34 @@ export function GameController() {
   const isEnded = room.status === RoomStatus.ended || !!room.winnerId;
 
   return (
-    <div className="container mx-auto p-4">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Mã phòng: {room.code}</h1>
-        <Button variant="outline" onClick={handleLeaveRoom}>
+    <div className="container mx-auto px-3 py-4 sm:p-4">
+      <div className="flex justify-between items-center mb-4 sm:mb-6">
+        <h1 className="text-xl sm:text-2xl font-bold">Mã phòng: {room.code}</h1>
+        <Button
+          variant="outline"
+          onClick={handleLeaveRoom}
+          className="text-sm sm:text-base"
+        >
           Thoát
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Left column - Players and Game Log */}
-        <div className="space-y-4">
+      <div className="flex flex-col-reverse md:flex-row md:grid md:grid-cols-3 gap-4 md:gap-6">
+        {/* Sidebar - Players and Game Log: at bottom on mobile, left side on desktop */}
+        <div className="space-y-4 md:col-span-1">
           <PlayerList />
-          
+
           {/* Game Log */}
-          <div className="bg-white rounded-lg shadow p-4">
-            <h2 className="text-xl font-bold mb-2">Nhật ký trò chơi</h2>
-            <div className="max-h-40 overflow-y-auto text-sm space-y-1">
+          <div className="bg-white rounded-lg shadow p-3 sm:p-4">
+            <h2 className="text-lg sm:text-xl font-bold mb-2">
+              Nhật ký trò chơi
+            </h2>
+            <div className="max-h-32 sm:max-h-40 overflow-y-auto text-xs sm:text-sm space-y-1">
               {gameLog.length > 0 ? (
                 gameLog.map((log, index) => (
-                  <p key={index} className="text-gray-700">{log}</p>
+                  <p key={index} className="text-gray-700">
+                    {log}
+                  </p>
                 ))
               ) : (
                 <p className="text-gray-500 italic">Chưa có sự kiện nào</p>
@@ -376,36 +307,50 @@ export function GameController() {
           </div>
         </div>
 
-        {/* Right column - Game Content */}
+        {/* Main content - Game Content: at top on mobile, right side on desktop */}
         <div className="md:col-span-2">
           {/* Waiting State UI */}
           {isWaiting && (
             <WaitingRoom>
               {isHost ? (
-                <div>
-                  <p className="mb-4">
+                <div className="p-1 sm:p-2">
+                  <p className="mb-3 sm:mb-4 text-sm sm:text-base">
                     Chia sẻ mã phòng với bạn bè:{' '}
                     <span className="font-bold">{room.code}</span>
                   </p>
-                  <Button 
+                  <Button
                     onClick={handleStartGame}
-                    disabled={useGameStore.getState().playersInRoom.some(p => p.selectedCardIds.length === 0)}
+                    disabled={useGameStore
+                      .getState()
+                      .playersInRoom.some(
+                        (p) => p.selectedCardIds.length === 0
+                      )}
+                    className="h-10 sm:h-auto text-sm sm:text-base w-full sm:w-auto"
                   >
                     Bắt đầu trò chơi
                   </Button>
-                  {useGameStore.getState().playersInRoom.some(p => p.selectedCardIds.length === 0) && (
-                    <p className="text-amber-600 mt-2 text-sm">Một số người chơi chưa chọn bảng</p>
+                  {useGameStore
+                    .getState()
+                    .playersInRoom.some(
+                      (p) => p.selectedCardIds.length === 0
+                    ) && (
+                    <p className="text-amber-600 mt-2 text-xs sm:text-sm">
+                      Một số người chơi chưa chọn bảng
+                    </p>
                   )}
                 </div>
               ) : (
-                <div>
-                  <h2 className="text-xl font-bold mb-4">Chờ chủ xị</h2>
-                  <p>
-                    Chủ xị sẽ bắt đầu trò chơi khi tất cả mọi người đã chọn bảng.
+                <div className="p-1 sm:p-2">
+                  <h2 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4">
+                    Chờ chủ xị
+                  </h2>
+                  <p className="text-sm sm:text-base">
+                    Chủ xị sẽ bắt đầu trò chơi khi tất cả mọi người đã chọn
+                    bảng.
                   </p>
                 </div>
               )}
-              <div className="mt-4">
+              <div className="mt-3 sm:mt-4">
                 <CardSelection />
               </div>
             </WaitingRoom>
@@ -416,8 +361,10 @@ export function GameController() {
             <GamePlay>
               {curPlayer.selectedCardIds.length > 0 ? (
                 <div>
-                  <h2 className="text-xl font-bold mb-4">Bảng của bạn</h2>
-                  <div>
+                  <h2 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4">
+                    Bảng của bạn
+                  </h2>
+                  <div className="space-y-3 sm:space-y-4">
                     {curPlayer.selectedCardIds.map((cardId) => (
                       <LoToCard
                         key={cardId}
@@ -428,25 +375,32 @@ export function GameController() {
                   </div>
                 </div>
               ) : (
-                <div className="text-center p-8">
-                  <p className="text-red-500 text-lg">Bạn chưa chọn bảng!</p>
-                  <p className="mt-2">Không thể tham gia trò chơi nếu chưa chọn bảng.</p>
+                <div className="text-center py-6 px-4 sm:p-8">
+                  <p className="text-red-500 text-base sm:text-lg">
+                    Bạn chưa chọn bảng!
+                  </p>
+                  <p className="mt-2 text-sm sm:text-base">
+                    Không thể tham gia trò chơi nếu chưa chọn bảng.
+                  </p>
                 </div>
               )}
 
               {/* Number Caller Section */}
               {!room.winnerId && (
-                <div className="mt-6">
+                <div className="mt-4 sm:mt-6">
                   <NumberCaller />
-                  
+
                   {/* Auto-call toggle for host */}
                   {isHost && (
-                    <div className="mt-4 flex justify-center">
-                      <Button 
+                    <div className="mt-3 sm:mt-4 flex justify-center">
+                      <Button
                         onClick={toggleAutoCall}
-                        variant={isAutoCalling ? "destructive" : "outline"}
+                        variant={isAutoCalling ? 'destructive' : 'outline'}
+                        className="w-full sm:w-auto text-sm sm:text-base h-12 sm:h-10"
                       >
-                        {isAutoCalling ? "Dừng gọi số tự động" : "Bắt đầu gọi số tự động"}
+                        {isAutoCalling
+                          ? 'Dừng gọi số tự động'
+                          : 'Bắt đầu gọi số tự động'}
                       </Button>
                     </div>
                   )}
@@ -458,13 +412,20 @@ export function GameController() {
           {/* Game Ended State UI */}
           {isEnded && (
             <GameEnded>
-              <div className="text-center mb-4">
-                <h2 className="text-xl font-bold mb-2">Trò chơi kết thúc!</h2>
-                <p>Người chiến thắng đã được xác định</p>
+              <div className="text-center mb-3 sm:mb-4">
+                <h2 className="text-lg sm:text-xl font-bold mb-2">
+                  Trò chơi kết thúc!
+                </h2>
+                <p className="text-sm sm:text-base">
+                  Người chiến thắng đã được xác định
+                </p>
               </div>
               {curPlayer?.isHost && (
                 <div className="flex justify-center">
-                  <Button onClick={showResetConfirmationDialog} className="px-8">
+                  <Button
+                    onClick={showResetConfirmationDialog}
+                    className="px-6 sm:px-8 h-12 sm:h-10 text-sm sm:text-base w-full sm:w-auto"
+                  >
                     Chơi lại
                   </Button>
                 </div>
@@ -485,9 +446,12 @@ export function GameController() {
           onPlayAgain={isHost ? showResetConfirmationDialog : undefined}
         />
       )}
-      
+
       {/* Reset Game Confirmation Dialog */}
-      <Dialog open={showResetConfirmation} onOpenChange={setShowResetConfirmation}>
+      <Dialog
+        open={showResetConfirmation}
+        onOpenChange={setShowResetConfirmation}
+      >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Xác nhận bắt đầu lại</DialogTitle>
@@ -495,16 +459,18 @@ export function GameController() {
           <div className="py-4">
             <p>Bạn có chắc chắn muốn bắt đầu trò chơi mới?</p>
             <p className="mt-2 text-sm text-gray-500">
-              Tất cả số đã gọi và đánh dấu sẽ bị xóa, nhưng người chơi sẽ vẫn ở trong phòng.
+              Tất cả số đã gọi và đánh dấu sẽ bị xóa, nhưng người chơi sẽ vẫn ở
+              trong phòng.
             </p>
           </div>
           <DialogFooter className="flex space-x-2 justify-end">
-            <Button variant="outline" onClick={() => setShowResetConfirmation(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setShowResetConfirmation(false)}
+            >
               Hủy
             </Button>
-            <Button onClick={handlePlayAgain}>
-              Xác nhận
-            </Button>
+            <Button onClick={handlePlayAgain}>Xác nhận</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

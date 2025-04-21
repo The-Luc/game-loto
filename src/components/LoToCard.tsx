@@ -213,12 +213,13 @@ export function LoToCard({
     <div>
       <div
         className={cn(
-          'border-2 rounded-lg p-2 relative bg-black/80',
-          selectable && 'cursor-pointer hover:border-blue-500',
+          'border-2 rounded-lg p-1 xs:p-2 relative bg-black/80',
+          selectable && 'cursor-pointer hover:border-blue-500 transition-colors',
           currentPlayerCardIds.includes(card.id) &&
             selectable &&
             'border-blue-500',
-          isShaking && 'animate-shake'
+          isShaking && 'animate-shake',
+          'touch-manipulation' // Better touch behavior
         )}
         style={{ pointerEvents: !selectable ? 'none' : 'auto' }}
       >
@@ -226,7 +227,7 @@ export function LoToCard({
           {[0, 1, 2].map((groupIndex) => (
             <div
               key={`group-${groupIndex}`}
-              className={`grid grid-cols-9 gap-[2px] ${groupIndex < 2 ? 'mb-[3%]' : ''}`}
+              className={`grid grid-cols-9 gap-[1px] xs:gap-[2px] sm:gap-1 ${groupIndex < 2 ? 'mb-2 xs:mb-[3%]' : ''}`}
             >
               {card?.grid
                 .slice(groupIndex * 3, groupIndex * 3 + 3)
@@ -242,13 +243,29 @@ export function LoToCard({
                       <div
                         key={`${rowIndex}-${colIndex}`}
                         onClick={() => handleCellClick(cell)}
+                        role={playable && cell ? "button" : "cell"}
+                        aria-label={cell ? `Number ${cell}${isSelected ? ', selected' : ''}${isCalled ? ', called' : ''}` : 'Empty cell'}
+                        aria-pressed={isSelected}
+                        tabIndex={cell && playable ? 0 : -1}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            handleCellClick(cell);
+                            e.preventDefault();
+                          }
+                        }}
                         style={{
                           backgroundColor: cell
                             ? '#E5E7EB'
                             : card?.backgroundColor,
                         }}
                         className={cn(
-                          'aspect-3/3 flex items-center justify-center text-[10%] font-bold font-oswald transition-all duration-200',
+                          // Base layout
+                          'aspect-square flex items-center justify-center',
+                          // Responsive text sizing
+                          'text-[10px] xs:text-xs sm:text-sm md:text-base font-bold font-oswald',
+                          // Touch friendly interactions
+                          'transition-all duration-200',
+                          playable && cell && 'active:scale-95 md:hover:scale-105',
                           // Cursor feedback for interactive cells
                           playable &&
                             cell &&

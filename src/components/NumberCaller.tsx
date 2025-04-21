@@ -144,23 +144,23 @@ export function NumberCaller() {
   // --------------------------------------------------
 
   return (
-    <Card className="mt-4">
-      <CardHeader>
-        <CardTitle>Number Caller</CardTitle>
+    <Card className="mt-4" aria-label="Number caller panel">
+      <CardHeader className="py-3 sm:py-6">
+        <CardTitle className="text-lg sm:text-xl">Number Caller</CardTitle>
       </CardHeader>
 
-      <CardContent>
+      <CardContent className="px-3 sm:px-6">
         {/* Current or Last Called Number Display */}
         {isPlaying && (
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             {currentNumber !== null && (
-              <div className="mb-6">
-                <p className="text-sm text-center text-muted-foreground mb-1">
+              <div className="mb-4 sm:mb-6">
+                <p className="text-xs sm:text-sm text-center text-muted-foreground mb-1">
                   {calledNumbers.length > 1
                     ? 'Last Called Number:'
                     : 'First Number:'}
                 </p>
-                <div className="text-6xl font-bold text-center p-6 bg-primary/10 rounded-lg transition-all duration-300">
+                <div className="text-4xl sm:text-5xl md:text-6xl font-bold text-center p-3 sm:p-6 bg-primary/10 rounded-lg transition-all duration-300" aria-live="polite" aria-atomic="true">
                   {currentNumber}
                 </div>
 
@@ -179,13 +179,14 @@ export function NumberCaller() {
             {calledNumbers.length > 0 && (
               <div className="mt-4">
                 <h3 className="text-sm font-medium mb-2">Called Numbers:</h3>
-                <div className="flex flex-wrap gap-2 justify-center">
+                <div className="flex flex-wrap gap-1 xs:gap-1.5 sm:gap-2 justify-center">
                   {calledNumbers.map((num, index) => (
                     <span
                       key={`${num}-${index}`}
-                      className={`inline-flex items-center justify-center h-8 w-8 text-sm 
+                      className={`inline-flex items-center justify-center h-6 w-6 xs:h-7 xs:w-7 sm:h-8 sm:w-8 text-xs sm:text-sm 
                         ${num === currentNumber ? 'bg-primary text-primary-foreground' : 'bg-muted'}
                         rounded-full font-medium`}
+                      aria-label={`Number ${num}${num === currentNumber ? ', current number' : ''}`}
                     >
                       {num}
                     </span>
@@ -198,8 +199,8 @@ export function NumberCaller() {
 
         {/* Winner display */}
         {isEnded && winnerNickname && (
-          <div className="py-6 text-center bg-green-100 dark:bg-green-900/20 rounded-lg">
-            <p className="text-2xl font-bold text-green-700 dark:text-green-300">
+          <div className="py-4 sm:py-6 text-center bg-green-100 dark:bg-green-900/20 rounded-lg" role="alert" aria-live="polite">
+            <p className="text-xl sm:text-2xl font-bold text-green-700 dark:text-green-300">
               🎉 Winner: {winnerNickname}! 🎉
             </p>
           </div>
@@ -257,7 +258,8 @@ export function NumberCaller() {
             <Button
               onClick={handleCallNext}
               disabled={isLoading || isAutoCallingActive}
-              className="w-full"
+              className="w-full h-12 sm:h-10 text-sm sm:text-base"
+              aria-label="Call next number"
             >
               Call Next Number
             </Button>
@@ -270,7 +272,8 @@ export function NumberCaller() {
             <Button
               onClick={handleStartOver}
               disabled={isLoading}
-              className="w-full"
+              className="w-full h-12 sm:h-10 text-sm sm:text-base"
+              aria-label="Start a new game"
             >
               Start New Game
             </Button>
