@@ -29,12 +29,18 @@ export function PlayerList() {
               <span className="font-medium truncate">{p.nickname}</span>
               <div className="flex flex-wrap gap-1 ml-1.5">
                 {p.isHost && (
-                  <span className="text-xxs sm:text-xs bg-blue-100 text-blue-800 px-1.5 py-0.5 sm:px-2 sm:py-1 rounded inline-flex items-center" aria-label="Chủ xị">
+                  <span
+                    className="text-xxs sm:text-xs bg-blue-100 text-blue-800 px-1.5 py-0.5 sm:px-2 sm:py-1 rounded inline-flex items-center"
+                    aria-label="Chủ xị"
+                  >
                     Chủ xị
                   </span>
                 )}
                 {p.id === currentPlayer.id && (
-                  <span className="text-xxs sm:text-xs bg-green-100 text-green-800 px-1.5 py-0.5 sm:px-2 sm:py-1 rounded inline-flex items-center" aria-label="Bạn">
+                  <span
+                    className="text-xxs sm:text-xs bg-green-100 text-green-800 px-1.5 py-0.5 sm:px-2 sm:py-1 rounded inline-flex items-center"
+                    aria-label="Bạn"
+                  >
                     Bạn
                   </span>
                 )}
@@ -43,26 +49,32 @@ export function PlayerList() {
 
             <div className="flex items-center space-x-2 ml-auto mt-1 sm:mt-0">
               {p.selectedCardIds.length > 0 ? (
-                <div className="text-xxs sm:text-xs font-medium text-green-600 flex items-center gap-1" aria-label="Đã sẵn sàng">
+                <div
+                  className="text-xxs sm:text-xs font-medium text-green-600 flex items-center gap-1"
+                  aria-label="Đã sẵn sàng"
+                >
                   <span className="h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-green-500"></span>
                   <span className="hidden xs:inline">Sẵn sàng</span>
                 </div>
               ) : (
-                <div className="text-xxs sm:text-xs font-medium text-gray-500 flex items-center gap-1" aria-label="Chưa sẵn sàng">
+                <div
+                  className="text-xxs sm:text-xs font-medium text-gray-500 flex items-center gap-1"
+                  aria-label="Chưa sẵn sàng"
+                >
                   <span className="h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-gray-400"></span>
                   <span className="hidden xs:inline">Đang chọn...</span>
                 </div>
               )}
-              {false && isHost && p.id !== currentPlayer?.id && (
+              {/* {false && isHost && p.id !== currentPlayer?.id && (
                 <Button
                   variant="destructive"
-                  size="sm" /* onClick={() => kickPlayer(p.id)} */
+                  size="sm" 
                   className="text-xxs sm:text-xs h-6 sm:h-8"
                   aria-label={`Loại người chơi ${p.nickname}`}
                 >
                   Tui không biết người này
                 </Button>
-              )}
+              )} */}
             </div>
           </li>
         ))}

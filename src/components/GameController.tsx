@@ -46,6 +46,7 @@ export function GameController() {
 
   // Game log state
   const [gameLog, setGameLog] = useState<string[]>([]);
+  console.log('GameLog:', gameLog);
 
   // Add to game log
   const addToGameLog = (message: string) => {

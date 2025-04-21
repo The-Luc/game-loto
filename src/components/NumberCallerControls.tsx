@@ -23,9 +23,6 @@ export function NumberCallerControls() {
   const [autoCallInterval, setAutoCallInterval] = useState<number>(5); // seconds
   const autoCallTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Only show to host
-  if (!isHost || !isPlaying) return null;
-
   // Clean up timer on unmount
   useEffect(() => {
     return () => {
@@ -48,6 +45,9 @@ export function NumberCallerControls() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAutoCallingActive, autoCallInterval, isPlaying, isHost]);
 
+  // Only show to host
+  if (!isHost || !isPlaying) return null;
+
   async function handleCallNext() {
     if (!isHost || !room || isLoading) return;
     if (room.status !== RoomStatus.playing) return;
@@ -58,6 +58,7 @@ export function NumberCallerControls() {
         addCalledNumber(response.number);
       }
     } catch (error) {
+      console.log('🚀 ~ handleCallNext ~ error:', error);
       // Could add toast here
     } finally {
       setIsLoading(false);

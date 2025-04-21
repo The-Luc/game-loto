@@ -135,7 +135,7 @@ function handleCardSelected(
 function handleNumberCalled(
   payload: BroadcastPayloadMap[RealtimeEventEnum.NUMBER_CALLED],
   setCalledNumbers: (numbers: number[]) => void,
-  speak: (text: string) => Promise<void>
+  speak: (number: number) => Promise<void>
 ) {
   console.log('Number called event received (from hook)', payload);
 
@@ -145,7 +145,7 @@ function handleNumberCalled(
   }
 
   setCalledNumbers(payload.calledNumbers);
-  speak(payload.number.toString());
+  speak(payload.number);
 }
 
 /**
@@ -187,7 +187,6 @@ function handleWinnerDeclared(
   }
 
   // Show a toast notification for all players
-  const { toast } = require('sonner');
   toast.success(`${payload.winnerName} has won the game with a complete column! 🎉`);
 }
 
@@ -201,7 +200,7 @@ function setupSubscriptions(
   setRoom: (room: Room) => void,
   setWinner: (player: Player | null) => void,
   setCalledNumbers: (numbers: number[]) => void,
-  speak: (text: string) => Promise<void>
+  speak: (number: number) => Promise<void>
 ): (() => void)[] {
   console.log(`Setting up subscriptions for room ${roomId}`);
   const unsubscribeFunctions: (() => void)[] = [];

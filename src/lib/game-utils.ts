@@ -1,5 +1,3 @@
-import { LoToCard } from '../types';
-
 /**
  * Generates a random 6-character alphanumeric room code
  */
@@ -7,7 +5,6 @@ export function generateRoomCode(): string {
   // simple version: return random number from 1 to 100
 
   return Math.floor(Math.random() * 100).toString();
-
 
   const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
   let result = '';
@@ -22,9 +19,11 @@ export function generateRoomCode(): string {
  * Each row has 5 numbers and 3 blank cells
  * Numbers range from 1-90 with no duplicates on a card
  */
-export function generateLoToCard(): LoToCard {
+export function generateLoToCard(): LoToCardType {
   // Create a grid with 9 rows and 8 columns, all null initially
-  const grid: (number | null)[][] = Array(9).fill(null).map(() => Array(8).fill(null));
+  const grid: (number | null)[][] = Array(9)
+    .fill(null)
+    .map(() => Array(8).fill(null));
 
   // Create a pool of available numbers (1-90)
   const availableNumbers = Array.from({ length: 90 }, (_, i) => i + 1);
@@ -49,7 +48,7 @@ export function generateLoToCard(): LoToCard {
 
   return {
     id: Math.random().toString(36).substring(2, 15),
-    grid
+    grid,
   };
 }
 
@@ -57,9 +56,10 @@ export function generateLoToCard(): LoToCard {
  * Generates multiple random Lô Tô cards
  */
 import { getRandomCardTemplate } from './card-template';
+import { LoToCardType } from './types';
 
-export function generateMultipleCards(count: number): LoToCard[] {
-  const cards: LoToCard[] = [];
+export function generateMultipleCards(count: number): LoToCardType[] {
+  const cards: LoToCardType[] = [];
   for (let i = 0; i < count; i++) {
     cards.push(getRandomCardTemplate());
   }
