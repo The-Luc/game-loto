@@ -16,7 +16,6 @@ datasource db {
 
 enum RoomStatus {
   waiting
-  selecting
   playing
   ended
 }
@@ -37,7 +36,7 @@ model Player {
   id            String   @id @default(cuid())
   nickname      String
   isHost        Boolean  @default(false)
-  cardId        String
+  selectedCardIds String[] @default([])
   markedNumbers Int[]
   roomId        String
   room          Room     @relation(fields: [roomId], references: [id])

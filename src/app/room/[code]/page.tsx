@@ -2,21 +2,23 @@
 
 import { useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Room as RoomComponent } from '@/components/Room'; 
-import { useGameStore } from '@/stores/useGameStore'; 
+import { Room as RoomComponent } from '@/components/Room';
+import { useGameStore } from '@/stores/useGameStore';
+import { useCurPlayer } from '@/hooks/useCurPlayer';
 
 export default function RoomPage() {
   const params = useParams();
   const router = useRouter();
-  const { room, player } = useGameStore();
+  const { room } = useGameStore();
+  const curPlayer = useCurPlayer();
   const roomCode = params.code as string;
 
   useEffect(() => {
-    if (!player) {
+    if (!curPlayer) {
       console.log('No player data found in store, redirecting to home.');
       router.push('/');
     }
-  }, [player, router, roomCode, room]); 
+  }, [curPlayer, router, roomCode, room]);
 
   if (!room) {
     return (
@@ -27,7 +29,9 @@ export default function RoomPage() {
   }
 
   if (room.code !== roomCode) {
-    console.log(`Room code mismatch: URL (${roomCode}) vs Store (${room.code}). Redirecting.`);
+    console.log(
+      `Room code mismatch: URL (${roomCode}) vs Store (${room.code}). Redirecting.`
+    );
     router.push('/');
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -36,5 +40,5 @@ export default function RoomPage() {
     );
   }
 
-  return <RoomComponent />; 
+  return <RoomComponent />;
 }

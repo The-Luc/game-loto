@@ -5,7 +5,7 @@ export interface Room extends PrismaRoom {
   players?: Player[];
 }
 
-export interface LoToCard {
+export interface LoToCardType {
   id: string;
   backgroundColor?: string;
   grid: (number | null)[][];
