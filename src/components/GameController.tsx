@@ -1,12 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useGameStore, GameState } from '@/stores/useGameStore';
-import { useCurPlayer } from '@/hooks/useCurPlayer';
-import { PlayerList } from '@/components/PlayerList';
 import { CardSelection } from '@/components/CardSelection';
 import { LoToCard } from '@/components/LoToCard';
 import { NumberCaller } from '@/components/NumberCaller';
+import { PlayerList } from '@/components/PlayerList';
 import { WinModal } from '@/components/WinModal';
 import { Button } from '@/components/ui/button';
 import {
@@ -16,19 +13,20 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { RoomStatus } from '@prisma/client';
+import { useCurPlayer } from '@/hooks/useCurPlayer';
+import { cardTemplates } from '@/lib/card-template';
+import { useRoomRealtime } from '@/lib/supabase-subscribe';
+import { LoToCardType } from '@/lib/types';
 import {
+  callNumberAction,
+  getRoomWithPlayersAction,
   leaveRoomAction,
   updateRoomStatusAction,
-  getRoomWithPlayersAction,
-  callNumberAction,
 } from '@/server/actions/room';
-import { useRoomRealtime } from '@/lib/supabase-subscribe';
-import { RealtimeEventEnum } from '@/lib/enums';
-import { cardTemplates } from '@/lib/card-template';
-import { LoToCardType } from '@/lib/types';
+import { GameState, useGameStore } from '@/stores/useGameStore';
+import { RoomStatus } from '@prisma/client';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import confetti from 'canvas-confetti';
 
 // Game view components
 const WaitingRoom = ({ children }: { children: React.ReactNode }) => (
@@ -251,7 +249,7 @@ export function GameController() {
     setWinnerInfo,
     setIsAutoCalling,
     setAutoCallInterval,
-    autoCallInterval
+    autoCallInterval,
   });
 
   if (!room || !curPlayer) {

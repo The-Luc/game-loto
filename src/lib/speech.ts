@@ -102,43 +102,95 @@ export const vietnameseNumbers: Record<number, string> = {
 let speechSynthesis: SpeechSynthesis | null = null;
 let vietnameseVoice: SpeechSynthesisVoice | null = null;
 
+// Track whether we're using audio file fallback
+let useAudioFallback = false;
+
+// Audio players cache to avoid recreating Audio objects
+const audioPlayers: Record<number, HTMLAudioElement> = {};
+
 /**
  * Initialize the speech synthesis engine and try to find a Vietnamese voice
- * Falls back to the default voice if no Vietnamese voice is available
+ * Falls back to audio files if no Vietnamese voice is available
  */
 export const initSpeechSynthesis = (): boolean => {
   // Check for browser support
   if (!('speechSynthesis' in window)) {
     console.warn('This browser does not support speech synthesis.');
-    return false;
+    useAudioFallback = true;
+    return true; // Return true as we'll use audio fallback
   }
 
   speechSynthesis = window.speechSynthesis;
-  
+
   // Load available voices
   const loadVoices = () => {
     const voices = speechSynthesis?.getVoices() || [];
-    
+
     // Try to find a Vietnamese voice
-    vietnameseVoice = voices.find(voice => 
-      voice.lang === 'vi-VN' || // Standard Vietnamese
-      voice.lang.startsWith('vi') // Any Vietnamese dialect
-    ) || null;
-    
+    vietnameseVoice =
+      voices.find(
+        (voice) =>
+          voice.lang === 'vi-VN' || // Standard Vietnamese
+          voice.lang.startsWith('vi') // Any Vietnamese dialect
+      ) || null;
+
     if (!vietnameseVoice) {
-      console.warn('No Vietnamese voice found, will use default voice.');
+      console.warn('No Vietnamese voice found, will use audio file fallback.');
+      useAudioFallback = true;
     }
-    
-    return voices.length > 0;
+
+    return true; // Always return true as we have a fallback now
   };
 
   // Chrome loads voices asynchronously
   if (speechSynthesis?.onvoiceschanged !== undefined) {
     speechSynthesis.onvoiceschanged = loadVoices;
   }
-  
+
   // Initial load attempt
   return loadVoices();
+};
+
+/**
+ * Play a number from an audio file
+ * @param number The number to play (1-90)
+ * @param callback Optional callback to run after audio is completed
+ */
+const playNumberAudio = (number: number, callback?: () => void): void => {
+  // Get or create audio player for this number
+  if (!audioPlayers[number]) {
+    const numberName = number.toString().padStart(3, '0');
+    audioPlayers[number] = new Audio(
+      `/audio/vietnamese-numbers/loto-sound_${numberName}.wav`
+    );
+  }
+
+  const player = audioPlayers[number];
+
+  // Set up event handlers
+  const handleEnd = () => {
+    player.removeEventListener('ended', handleEnd);
+    player.removeEventListener('error', handleError);
+    callback?.();
+  };
+
+  const handleError = (e: Event) => {
+    console.error(`Error playing audio for number ${number}:`, e);
+    player.removeEventListener('ended', handleEnd);
+    player.removeEventListener('error', handleError);
+    callback?.();
+  };
+
+  // Reset and add event listeners
+  player.currentTime = 0;
+  player.addEventListener('ended', handleEnd);
+  player.addEventListener('error', handleError);
+
+  // Start playback
+  player.play().catch((error) => {
+    console.error('Audio playback failed:', error);
+    callback?.();
+  });
 };
 
 /**
@@ -146,15 +198,19 @@ export const initSpeechSynthesis = (): boolean => {
  * @param number The number to speak (1-90)
  * @param callback Optional callback to run after speech is completed
  */
-export const speakVietnameseNumber = (number: number, callback?: () => void): void => {
-  if (!speechSynthesis) {
-    if (!initSpeechSynthesis()) {
-      console.error('Failed to initialize speech synthesis');
-      callback?.();
-      return;
-    }
+export const speakVietnameseNumber = (
+  number: number,
+  callback?: () => void
+): void => {
+  if (!speechSynthesis && !useAudioFallback) {
+    // NOTE: only use audio for now
+    // if (!initSpeechSynthesis()) {
+    //   console.error('Failed to initialize speech synthesis');
+    //   callback?.();
+    //   return;
+    // }
   }
-  
+
   // Validate number range
   if (number < 1 || number > 90) {
     console.error('Number must be between 1 and 90');
@@ -162,33 +218,41 @@ export const speakVietnameseNumber = (number: number, callback?: () => void): vo
     return;
   }
 
+  // Use audio fallback if no Vietnamese voice is available
+  if (useAudioFallback) {
+    playNumberAudio(number, callback);
+    return;
+  }
+
+  // Continue with Web Speech API if Vietnamese voice is available
   // Cancel any ongoing speech
   speechSynthesis?.cancel();
-  
+
   // Get Vietnamese pronunciation
   const text = vietnameseNumbers[number];
-  
+
   const utterance = new SpeechSynthesisUtterance(text);
-  
+
   // Set Vietnamese voice if available
   if (vietnameseVoice) {
     utterance.voice = vietnameseVoice;
     utterance.lang = 'vi-VN';
   } else {
-    // Fallback - set lang to Vietnamese even with default voice
+    // This should not occur now due to useAudioFallback check
+    // but keeping as a safety net
     utterance.lang = 'vi-VN';
   }
-  
+
   // Configure speech parameters
   utterance.rate = 0.9; // Slightly slower for clearer pronunciation
   utterance.pitch = 1.0;
   utterance.volume = 1.0;
-  
+
   if (callback) {
     utterance.onend = () => callback();
     utterance.onerror = () => callback();
   }
-  
+
   speechSynthesis?.speak(utterance);
 };
 

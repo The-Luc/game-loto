@@ -296,7 +296,9 @@ export function useRoomRealtime(
   uiOptions?: {
     addToGameLog?: (message: string) => void;
     setShowWinModal?: (show: boolean) => void;
-    setWinnerInfo?: (info: {name: string, cardId: string, winningRowIndex: number} | null) => void;
+    setWinnerInfo?: (
+      info: { name: string; cardId: string; winningRowIndex: number } | null
+    ) => void;
     setIsAutoCalling?: (isAutoCalling: boolean) => void;
     setAutoCallInterval?: (interval: NodeJS.Timeout | null) => void;
     autoCallInterval?: NodeJS.Timeout | null;
@@ -333,45 +335,54 @@ export function useRoomRealtime(
         setWinner,
         setCalledNumbers
       );
-      
+
       // Add UI-specific event handlers
       const uiSubscriptions: (() => void)[] = [];
-      
+
       // Winner declared events - UI specific handling
-      if (uiOptions?.setShowWinModal || uiOptions?.setWinnerInfo || uiOptions?.addToGameLog) {
+      if (
+        uiOptions?.setShowWinModal ||
+        uiOptions?.setWinnerInfo ||
+        uiOptions?.addToGameLog
+      ) {
         const unsub = supabaseRealtime.subscribe(
           RealtimeEventEnum.WINNER_DECLARED,
           (payload) => {
             console.log('Winner declared UI event received:', payload);
-            
+
             // Update winner info and show modal if handlers are provided
-            if (uiOptions.setWinnerInfo && payload.winnerName && payload.cardId && payload.winningRowIndex !== undefined) {
+            if (
+              uiOptions.setWinnerInfo &&
+              payload.winnerName &&
+              payload.cardId &&
+              payload.winningRowIndex !== undefined
+            ) {
               uiOptions.setWinnerInfo({
                 name: payload.winnerName,
                 cardId: payload.cardId,
-                winningRowIndex: payload.winningRowIndex
+                winningRowIndex: payload.winningRowIndex,
               });
             }
-            
+
             if (uiOptions.setShowWinModal) {
               uiOptions.setShowWinModal(true);
             }
-            
+
             if (uiOptions.addToGameLog && payload.winnerName) {
               uiOptions.addToGameLog(`${payload.winnerName} đã chiến thắng!`);
             }
-            
+
             // Trigger confetti celebration
             confetti({
               particleCount: 100,
               spread: 70,
-              origin: { y: 0.6 }
+              origin: { y: 0.6 },
             });
           }
         );
         uiSubscriptions.push(unsub);
       }
-      
+
       // Number called events - UI specific handling
       if (uiOptions?.addToGameLog) {
         const unsub = supabaseRealtime.subscribe(
@@ -385,7 +396,7 @@ export function useRoomRealtime(
         );
         uiSubscriptions.push(unsub);
       }
-      
+
       // Player joined events - UI specific handling
       if (uiOptions?.addToGameLog) {
         const unsub = supabaseRealtime.subscribe(
@@ -393,14 +404,16 @@ export function useRoomRealtime(
           (payload) => {
             console.log('Player joined UI event received:', payload);
             if (payload.player?.nickname) {
-              uiOptions.addToGameLog?.(`${payload.player.nickname} đã tham gia phòng`);
+              uiOptions.addToGameLog?.(
+                `${payload.player.nickname} đã tham gia phòng`
+              );
               toast.info(`${payload.player.nickname} đã tham gia phòng!`);
             }
           }
         );
         uiSubscriptions.push(unsub);
       }
-      
+
       // Player left events - UI specific handling
       if (uiOptions?.addToGameLog) {
         const unsub = supabaseRealtime.subscribe(
@@ -408,14 +421,16 @@ export function useRoomRealtime(
           (payload) => {
             console.log('Player left UI event received:', payload);
             if (payload.playerNickname) {
-              uiOptions.addToGameLog?.(`${payload.playerNickname} đã rời phòng`);
+              uiOptions.addToGameLog?.(
+                `${payload.playerNickname} đã rời phòng`
+              );
               toast.info(`${payload.playerNickname} đã rời phòng`);
             }
           }
         );
         uiSubscriptions.push(unsub);
       }
-      
+
       // Game started events - UI specific handling
       if (uiOptions?.addToGameLog) {
         const unsub = supabaseRealtime.subscribe(
@@ -428,17 +443,25 @@ export function useRoomRealtime(
         );
         uiSubscriptions.push(unsub);
       }
-      
+
       // Game ended events - UI specific handling
-      if (uiOptions?.addToGameLog || uiOptions?.setIsAutoCalling || uiOptions?.setAutoCallInterval) {
+      if (
+        uiOptions?.addToGameLog ||
+        uiOptions?.setIsAutoCalling ||
+        uiOptions?.setAutoCallInterval
+      ) {
         const unsub = supabaseRealtime.subscribe(
           RealtimeEventEnum.GAME_ENDED,
           () => {
             console.log('Game ended UI event received');
             uiOptions.addToGameLog?.('Trò chơi đã kết thúc');
-            
+
             // Stop auto-calling if it's active
-            if (uiOptions.setIsAutoCalling && uiOptions.setAutoCallInterval && uiOptions.autoCallInterval) {
+            if (
+              uiOptions.setIsAutoCalling &&
+              uiOptions.setAutoCallInterval &&
+              uiOptions.autoCallInterval
+            ) {
               clearInterval(uiOptions.autoCallInterval);
               uiOptions.setAutoCallInterval(null);
               uiOptions.setIsAutoCalling(false);
@@ -447,7 +470,7 @@ export function useRoomRealtime(
         );
         uiSubscriptions.push(unsub);
       }
-      
+
       return [...basicSubscriptions, ...uiSubscriptions];
     };
 
@@ -463,7 +486,7 @@ export function useRoomRealtime(
 
       // Mark subscription as active
       subscriptionActive = true;
-    }, 10000); // 10 second delay before setting up subscriptions
+    }, 1000); // 1 second delay before setting up subscriptions
 
     // Cleanup function: Handle both timeout and subscriptions
     return () => {
@@ -486,7 +509,7 @@ export function useRoomRealtime(
       unsubscribeFunctions.length = 0;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [roomId, uiOptions]);
+  }, [roomId]);
 
   // This hook doesn't need to return anything; its purpose is to manage subscriptions side effect.
 }

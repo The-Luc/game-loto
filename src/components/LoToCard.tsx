@@ -180,7 +180,11 @@ export function LoToCard({
   // Check if a number completes a row (horizontal win)
   const checkWinning = (
     number: number
-  ): { hasWon: boolean; winningNumbers?: number[]; winningRowIndex?: number } => {
+  ): {
+    hasWon: boolean;
+    winningNumbers?: number[];
+    winningRowIndex?: number;
+  } => {
     // We need to have at least one marked number to check for a win
     if (!number) return { hasWon: false };
 
@@ -214,7 +218,8 @@ export function LoToCard({
       <div
         className={cn(
           'border-2 rounded-lg p-1 xs:p-2 relative bg-black/80',
-          selectable && 'cursor-pointer hover:border-blue-500 transition-colors',
+          selectable &&
+            'cursor-pointer hover:border-blue-500 transition-colors',
           currentPlayerCardIds.includes(card.id) &&
             selectable &&
             'border-blue-500',
@@ -243,9 +248,7 @@ export function LoToCard({
                       <div
                         key={`${rowIndex}-${colIndex}`}
                         onClick={() => handleCellClick(cell)}
-                        role={playable && cell ? "button" : "cell"}
-                        aria-label={cell ? `Number ${cell}${isSelected ? ', selected' : ''}${isCalled ? ', called' : ''}` : 'Empty cell'}
-                        aria-pressed={isSelected}
+                        role={playable && cell ? 'button' : 'cell'}
                         tabIndex={cell && playable ? 0 : -1}
                         onKeyDown={(e) => {
                           if (e.key === 'Enter' || e.key === ' ') {
@@ -265,35 +268,30 @@ export function LoToCard({
                           'text-[10px] xs:text-xs sm:text-sm md:text-base font-bold font-oswald',
                           // Touch friendly interactions
                           'transition-all duration-200',
-                          playable && cell && 'active:scale-95 md:hover:scale-105',
+                          playable &&
+                            cell &&
+                            'active:scale-95 md:hover:scale-105',
                           // Cursor feedback for interactive cells
                           playable &&
                             cell &&
                             currentCalledNumbers.includes(cell) &&
                             'cursor-pointer hover:opacity-80',
-                          playable &&
-                            cell &&
-                            !currentCalledNumbers.includes(cell) &&
-                            'cursor-not-allowed',
 
                           // Styling for marked cells
                           isSelected &&
                             isCalled &&
-                            'bg-green-200 border-green-600 border-2 shadow-inner',
+                            'bg-green-700! border-green-600 border-3 shadow-inner',
 
                           // Highlight completed column
                           completedColumns.includes(colIndex) &&
                             cell &&
-                            'bg-green-300 border-green-700 border-2 shadow-lg',
+                            'bg-green-500 border-green-700 border-3 shadow-lg',
 
                           // Highlight winning row
                           highlightedRowIndex !== undefined &&
                             highlightedRowIndex === rowIndex &&
                             cell &&
                             'bg-amber-300 border-amber-600 border-2 shadow-lg animate-pulse',
-
-                          // Styling for called but unmarked cells
-                          !isSelected && isCalled && 'opacity-70 bg-yellow-50',
 
                           // Highlight cells that can be marked (called but not yet marked)
                           playable &&

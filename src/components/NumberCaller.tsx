@@ -146,7 +146,7 @@ export function NumberCaller() {
   return (
     <Card className="mt-4" aria-label="Number caller panel">
       <CardHeader className="py-3 sm:py-6">
-        <CardTitle className="text-lg sm:text-xl">Number Caller</CardTitle>
+        <CardTitle className="text-lg sm:text-xl">Gọi số</CardTitle>
       </CardHeader>
 
       <CardContent className="px-3 sm:px-6">
@@ -156,11 +156,13 @@ export function NumberCaller() {
             {currentNumber !== null && (
               <div className="mb-4 sm:mb-6">
                 <p className="text-xs sm:text-sm text-center text-muted-foreground mb-1">
-                  {calledNumbers.length > 1
-                    ? 'Last Called Number:'
-                    : 'First Number:'}
+                  {calledNumbers.length > 1 ? 'Số vừa gọi: ' : 'Số đầu tiên: '}
                 </p>
-                <div className="text-4xl sm:text-5xl md:text-6xl font-bold text-center p-3 sm:p-6 bg-primary/10 rounded-lg transition-all duration-300" aria-live="polite" aria-atomic="true">
+                <div
+                  className="text-4xl sm:text-5xl md:text-6xl font-bold text-center p-3 sm:p-6 bg-primary/10 rounded-lg transition-all duration-300"
+                  aria-live="polite"
+                  aria-atomic="true"
+                >
                   {currentNumber}
                 </div>
 
@@ -178,7 +180,7 @@ export function NumberCaller() {
             {/* Called Numbers History */}
             {calledNumbers.length > 0 && (
               <div className="mt-4">
-                <h3 className="text-sm font-medium mb-2">Called Numbers:</h3>
+                <h3 className="text-sm font-medium mb-2"> Số đã gọi: </h3>
                 <div className="flex flex-wrap gap-1 xs:gap-1.5 sm:gap-2 justify-center">
                   {calledNumbers.map((num, index) => (
                     <span
@@ -199,9 +201,13 @@ export function NumberCaller() {
 
         {/* Winner display */}
         {isEnded && winnerNickname && (
-          <div className="py-4 sm:py-6 text-center bg-green-100 dark:bg-green-900/20 rounded-lg" role="alert" aria-live="polite">
+          <div
+            className="py-4 sm:py-6 text-center bg-green-100 dark:bg-green-900/20 rounded-lg"
+            role="alert"
+            aria-live="polite"
+          >
             <p className="text-xl sm:text-2xl font-bold text-green-700 dark:text-green-300">
-              🎉 Winner: {winnerNickname}! 🎉
+              🎉 Người thắng: {winnerNickname}! 🎉
             </p>
           </div>
         )}
@@ -213,11 +219,9 @@ export function NumberCaller() {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
-                  <Label htmlFor="auto-call-toggle">Auto-Call</Label>
+                  <Label htmlFor="auto-call-toggle"> Tự động gọi </Label>
                   <p className="text-sm text-muted-foreground">
-                    {isAutoCallingActive
-                      ? `Every ${formattedInterval}`
-                      : 'Disabled'}
+                    {isAutoCallingActive ? ` Mỗi ${formattedInterval}` : 'Tắt'}
                   </p>
                 </div>
                 <Switch
@@ -232,7 +236,7 @@ export function NumberCaller() {
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
                   <Label htmlFor="interval-slider" className="text-sm">
-                    Interval
+                    Thời gian chờ
                   </Label>
                   <span className="text-sm font-medium">
                     {formattedInterval}
@@ -261,7 +265,7 @@ export function NumberCaller() {
               className="w-full h-12 sm:h-10 text-sm sm:text-base"
               aria-label="Call next number"
             >
-              Call Next Number
+              Gọi tiếp
             </Button>
           </div>
         )}
@@ -275,7 +279,7 @@ export function NumberCaller() {
               className="w-full h-12 sm:h-10 text-sm sm:text-base"
               aria-label="Start a new game"
             >
-              Start New Game
+              Làm lại từ đầu
             </Button>
           </div>
         )}
