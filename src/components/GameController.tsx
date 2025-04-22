@@ -93,45 +93,45 @@ export function GameController() {
   };
 
   // Auto-call number for host
-  const [isAutoCalling, setIsAutoCalling] = useState(false);
+  // const [isAutoCalling, setIsAutoCalling] = useState(false);
   const [autoCallInterval, setAutoCallInterval] = useState<NodeJS.Timeout | null>(null);
 
-  const toggleAutoCall = () => {
-    if (isAutoCalling) {
-      // Stop auto-calling
-      if (autoCallInterval) {
-        clearInterval(autoCallInterval);
-        setAutoCallInterval(null);
-      }
-      setIsAutoCalling(false);
-      toast.info('Đã dừng gọi số tự động');
-    } else {
-      // Start auto-calling
-      const interval = setInterval(async () => {
-        if (room && curPlayer?.isHost) {
-          try {
-            const result = await callNumberAction(room.id);
-            if (!result.success) {
-              clearInterval(interval);
-              setIsAutoCalling(false);
-              setAutoCallInterval(null);
-              toast.error(result.error || 'Không thể gọi số tự động');
-            }
-          } catch (error) {
-            console.error('Auto-call error:', error);
-            clearInterval(interval);
-            setIsAutoCalling(false);
-            setAutoCallInterval(null);
-            toast.error('Đã có lỗi xảy ra khi gọi số tự động');
-          }
-        }
-      }, 3000); // Call a number every 3 seconds
+  // const toggleAutoCall = () => {
+  //   if (isAutoCalling) {
+  //     // Stop auto-calling
+  //     if (autoCallInterval) {
+  //       clearInterval(autoCallInterval);
+  //       setAutoCallInterval(null);
+  //     }
+  //     setIsAutoCalling(false);
+  //     toast.info('Đã dừng gọi số tự động');
+  //   } else {
+  //     // Start auto-calling
+  //     const interval = setInterval(async () => {
+  //       if (room && curPlayer?.isHost) {
+  //         try {
+  //           const result = await callNumberAction(room.id);
+  //           if (!result.success) {
+  //             clearInterval(interval);
+  //             setIsAutoCalling(false);
+  //             setAutoCallInterval(null);
+  //             toast.error(result.error || 'Không thể gọi số tự động');
+  //           }
+  //         } catch (error) {
+  //           console.error('Auto-call error:', error);
+  //           clearInterval(interval);
+  //           setIsAutoCalling(false);
+  //           setAutoCallInterval(null);
+  //           toast.error('Đã có lỗi xảy ra khi gọi số tự động');
+  //         }
+  //       }
+  //     }, 3000); // Call a number every 3 seconds
 
-      setAutoCallInterval(interval);
-      setIsAutoCalling(true);
-      toast.success('Bắt đầu gọi số tự động');
-    }
-  };
+  //     setAutoCallInterval(interval);
+  //     setIsAutoCalling(true);
+  //     toast.success('Bắt đầu gọi số tự động');
+  //   }
+  // };
 
   // Cleanup auto-call interval on component unmount
   useEffect(() => {
@@ -200,9 +200,9 @@ export function GameController() {
     addToGameLog,
     setShowWinModal,
     setWinnerInfo,
-    setIsAutoCalling,
-    setAutoCallInterval,
-    autoCallInterval,
+    // setIsAutoCalling,
+    // setAutoCallInterval,
+    // autoCallInterval,
   });
 
   if (!room || !curPlayer) {

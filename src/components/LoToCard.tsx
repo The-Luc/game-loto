@@ -199,11 +199,12 @@ export function LoToCard({
       )}
       style={{ pointerEvents: !selectable ? 'none' : 'auto', ...style }}
     >
-      <div className="flex flex-col">
+      <div className="flex flex-col gap-1">
         {[0, 1, 2].map((groupIndex) => (
           <div
             key={`group-${groupIndex}`}
-            className={`grid grid-cols-9 gap-[1px] xs:gap-[2px] sm:gap-1 ${groupIndex < 2 ? 'mb-2 xs:mb-[3%]' : ''}`}
+            // className={`grid grid-cols-9 gap-[1px] xs:gap-[2px] sm:gap-1 ${groupIndex < 2 ? 'mb-[1%] xs:mb-[3%]' : ''}`}
+            className={`grid grid-cols-9 gap-[1px] xs:gap-[2px] sm:gap-1`}
           >
             {card?.grid
               .slice(groupIndex * 3, groupIndex * 3 + 3)
