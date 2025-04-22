@@ -199,11 +199,12 @@ export function LoToCard({
       )}
       style={{ pointerEvents: !selectable ? 'none' : 'auto', ...style }}
     >
-      <div className="flex flex-col">
+      <div className="flex flex-col gap-1">
         {[0, 1, 2].map((groupIndex) => (
           <div
             key={`group-${groupIndex}`}
-            className={`grid grid-cols-9 gap-[1px] xs:gap-[2px] sm:gap-1 ${groupIndex < 2 ? 'mb-2 xs:mb-[3%]' : ''}`}
+            // className={`grid grid-cols-9 gap-[1px] xs:gap-[2px] sm:gap-1 ${groupIndex < 2 ? 'mb-[1%] xs:mb-[3%]' : ''}`}
+            className={`grid grid-cols-9 gap-[1px] xs:gap-[2px] sm:gap-1`}
           >
             {card?.grid
               .slice(groupIndex * 3, groupIndex * 3 + 3)
@@ -232,7 +233,7 @@ export function LoToCard({
                         // Base layout
                         'aspect-square flex items-center justify-center',
                         // Responsive text sizing
-                        'text-[10px] xs:text-xs sm:text-sm md:text-base font-bold font-oswald',
+                        'text-[20px]  sm:text-[14px] md:text-xl lg:text-2xl font-bold font-oswald',
                         // Touch friendly interactions
                         'transition-all duration-200',
                         playable && cell && 'active:scale-95 md:hover:scale-105',

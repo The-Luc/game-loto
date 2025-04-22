@@ -93,45 +93,45 @@ export function GameController() {
   };
 
   // Auto-call number for host
-  const [isAutoCalling, setIsAutoCalling] = useState(false);
+  // const [isAutoCalling, setIsAutoCalling] = useState(false);
   const [autoCallInterval, setAutoCallInterval] = useState<NodeJS.Timeout | null>(null);
 
-  const toggleAutoCall = () => {
-    if (isAutoCalling) {
-      // Stop auto-calling
-      if (autoCallInterval) {
-        clearInterval(autoCallInterval);
-        setAutoCallInterval(null);
-      }
-      setIsAutoCalling(false);
-      toast.info('Đã dừng gọi số tự động');
-    } else {
-      // Start auto-calling
-      const interval = setInterval(async () => {
-        if (room && curPlayer?.isHost) {
-          try {
-            const result = await callNumberAction(room.id);
-            if (!result.success) {
-              clearInterval(interval);
-              setIsAutoCalling(false);
-              setAutoCallInterval(null);
-              toast.error(result.error || 'Không thể gọi số tự động');
-            }
-          } catch (error) {
-            console.error('Auto-call error:', error);
-            clearInterval(interval);
-            setIsAutoCalling(false);
-            setAutoCallInterval(null);
-            toast.error('Đã có lỗi xảy ra khi gọi số tự động');
-          }
-        }
-      }, 3000); // Call a number every 3 seconds
+  // const toggleAutoCall = () => {
+  //   if (isAutoCalling) {
+  //     // Stop auto-calling
+  //     if (autoCallInterval) {
+  //       clearInterval(autoCallInterval);
+  //       setAutoCallInterval(null);
+  //     }
+  //     setIsAutoCalling(false);
+  //     toast.info('Đã dừng gọi số tự động');
+  //   } else {
+  //     // Start auto-calling
+  //     const interval = setInterval(async () => {
+  //       if (room && curPlayer?.isHost) {
+  //         try {
+  //           const result = await callNumberAction(room.id);
+  //           if (!result.success) {
+  //             clearInterval(interval);
+  //             setIsAutoCalling(false);
+  //             setAutoCallInterval(null);
+  //             toast.error(result.error || 'Không thể gọi số tự động');
+  //           }
+  //         } catch (error) {
+  //           console.error('Auto-call error:', error);
+  //           clearInterval(interval);
+  //           setIsAutoCalling(false);
+  //           setAutoCallInterval(null);
+  //           toast.error('Đã có lỗi xảy ra khi gọi số tự động');
+  //         }
+  //       }
+  //     }, 3000); // Call a number every 3 seconds
 
-      setAutoCallInterval(interval);
-      setIsAutoCalling(true);
-      toast.success('Bắt đầu gọi số tự động');
-    }
-  };
+  //     setAutoCallInterval(interval);
+  //     setIsAutoCalling(true);
+  //     toast.success('Bắt đầu gọi số tự động');
+  //   }
+  // };
 
   // Cleanup auto-call interval on component unmount
   useEffect(() => {
@@ -200,9 +200,9 @@ export function GameController() {
     addToGameLog,
     setShowWinModal,
     setWinnerInfo,
-    setIsAutoCalling,
-    setAutoCallInterval,
-    autoCallInterval,
+    // setIsAutoCalling,
+    // setAutoCallInterval,
+    // autoCallInterval,
   });
 
   if (!room || !curPlayer) {
@@ -278,14 +278,14 @@ export function GameController() {
                 <div className="w-full flex flex-col items-center justify-center">
                   <h2 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4">Bảng của bạn</h2>
                   {/* Responsive container for 1 or 2 cards */}
-                  <div className={'flex flex-row gap-4 w-full justify-center items-center max-h-[60vh]'}>
+                  <div className={'flex flex-col sm:flex-row gap-4 w-full justify-center items-center'}>
                     {curPlayer.selectedCardIds.map((cardId) => (
                       <LoToCard
                         key={cardId}
                         card={getCardById(cardId)}
                         playable={true}
-                        className="w-full max-w-[400px] md:max-w-[350px] max-h-[55vh]"
-                        style={{ flex: 1, minWidth: 0 }}
+                        // className="w-full min-h-[40vh] sm:min-h-0 sm:max-h-[60vh] flex"
+                        className="w-full flex"
                       />
                     ))}
                   </div>

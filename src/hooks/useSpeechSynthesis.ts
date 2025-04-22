@@ -1,12 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import {
-  initSpeechSynthesis,
-  speakVietnameseNumber,
-  isSpeechSynthesisSupported,
-  stopSpeech,
-} from '@/lib/speech';
+import { initSpeechSynthesis, speakVietnameseNumber, isSpeechSynthesisSupported, stopSpeech } from '@/lib/speech';
 
 interface UseSpeechSynthesisReturn {
   speak: (number: number) => Promise<void>;
@@ -42,25 +37,16 @@ export function useSpeechSynthesis(): UseSpeechSynthesisReturn {
   }, []);
 
   // Function to speak a number
-  const speak = useCallback(
-    (number: number): Promise<void> => {
-      return new Promise((resolve) => {
-        if (!isSupported) {
-          console.warn('Speech synthesis is not supported in this browser');
-          resolve();
-          return;
-        }
+  const speak = useCallback((number: number): Promise<void> => {
+    return new Promise((resolve) => {
+      setIsSpeaking(true);
 
-        setIsSpeaking(true);
-
-        speakVietnameseNumber(number, () => {
-          setIsSpeaking(false);
-          resolve();
-        });
+      speakVietnameseNumber(number, () => {
+        setIsSpeaking(false);
+        resolve();
       });
-    },
-    [isSupported]
-  );
+    });
+  }, []);
 
   // Function to stop speaking
   const stop = useCallback(() => {

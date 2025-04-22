@@ -160,9 +160,7 @@ const playNumberAudio = (number: number, callback?: () => void): void => {
   // Get or create audio player for this number
   if (!audioPlayers[number]) {
     const numberName = number.toString().padStart(3, '0');
-    audioPlayers[number] = new Audio(
-      `/audio/vietnamese-numbers/loto-sound_${numberName}.wav`
-    );
+    audioPlayers[number] = new Audio(`/audio/vietnamese-numbers/loto-sound_${numberName}.wav`);
   }
 
   const player = audioPlayers[number];
@@ -198,19 +196,7 @@ const playNumberAudio = (number: number, callback?: () => void): void => {
  * @param number The number to speak (1-90)
  * @param callback Optional callback to run after speech is completed
  */
-export const speakVietnameseNumber = (
-  number: number,
-  callback?: () => void
-): void => {
-  if (!speechSynthesis && !useAudioFallback) {
-    // NOTE: only use audio for now
-    // if (!initSpeechSynthesis()) {
-    //   console.error('Failed to initialize speech synthesis');
-    //   callback?.();
-    //   return;
-    // }
-  }
-
+export const speakVietnameseNumber = (number: number, callback?: () => void): void => {
   // Validate number range
   if (number < 1 || number > 90) {
     console.error('Number must be between 1 and 90');
@@ -218,42 +204,7 @@ export const speakVietnameseNumber = (
     return;
   }
 
-  // Use audio fallback if no Vietnamese voice is available
-  if (useAudioFallback) {
-    playNumberAudio(number, callback);
-    return;
-  }
-
-  // Continue with Web Speech API if Vietnamese voice is available
-  // Cancel any ongoing speech
-  speechSynthesis?.cancel();
-
-  // Get Vietnamese pronunciation
-  const text = vietnameseNumbers[number];
-
-  const utterance = new SpeechSynthesisUtterance(text);
-
-  // Set Vietnamese voice if available
-  if (vietnameseVoice) {
-    utterance.voice = vietnameseVoice;
-    utterance.lang = 'vi-VN';
-  } else {
-    // This should not occur now due to useAudioFallback check
-    // but keeping as a safety net
-    utterance.lang = 'vi-VN';
-  }
-
-  // Configure speech parameters
-  utterance.rate = 0.9; // Slightly slower for clearer pronunciation
-  utterance.pitch = 1.0;
-  utterance.volume = 1.0;
-
-  if (callback) {
-    utterance.onend = () => callback();
-    utterance.onerror = () => callback();
-  }
-
-  speechSynthesis?.speak(utterance);
+  playNumberAudio(number, callback);
 };
 
 /**
