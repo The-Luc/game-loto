@@ -233,7 +233,7 @@ export function LoToCard({
                         // Base layout
                         'aspect-square flex items-center justify-center',
                         // Responsive text sizing
-                        'text-[10px] xs:text-xs sm:text-sm md:text-base font-bold font-oswald',
+                        'text-[20px]  sm:text-[14px] md:text-xl lg:text-2xl font-bold font-oswald',
                         // Touch friendly interactions
                         'transition-all duration-200',
                         playable && cell && 'active:scale-95 md:hover:scale-105',

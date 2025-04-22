@@ -278,14 +278,14 @@ export function GameController() {
                 <div className="w-full flex flex-col items-center justify-center">
                   <h2 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4">Bảng của bạn</h2>
                   {/* Responsive container for 1 or 2 cards */}
-                  <div className={'flex flex-row gap-4 w-full justify-center items-center max-h-[60vh]'}>
+                  <div className={'flex flex-col sm:flex-row gap-4 w-full justify-center items-center'}>
                     {curPlayer.selectedCardIds.map((cardId) => (
                       <LoToCard
                         key={cardId}
                         card={getCardById(cardId)}
                         playable={true}
-                        className="w-full max-w-[400px] md:max-w-[350px] max-h-[55vh]"
-                        style={{ flex: 1, minWidth: 0 }}
+                        // className="w-full min-h-[40vh] sm:min-h-0 sm:max-h-[60vh] flex"
+                        className="w-full flex"
                       />
                     ))}
                   </div>
