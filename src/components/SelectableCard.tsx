@@ -33,13 +33,11 @@ export const SelectableCard = ({
         ${isShaking ? 'animate-shake' : ''}
       `}
     >
-      <LoToCard card={card} selectable={selectable} />
+      <LoToCard card={card} selectable={selectable} isSelectionScreen={true} />
 
       {isCardSelected && playerName && (
         <div className="absolute inset-0 flex items-center justify-center bg-black/50  rounded-lg">
-          <div className="bg-red-400 text-white px-10 py-2 rounded-md text-lg  border-2 border-white">
-            {playerName}
-          </div>
+          <div className="bg-red-400 text-white px-10 py-2 rounded-md text-lg  border-2 border-white">{playerName}</div>
         </div>
       )}
     </div>
