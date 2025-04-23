@@ -16,7 +16,6 @@ interface LoToCardProps {
   isShaking?: boolean;
   highlightedRowIndex?: number; // New prop for highlighting a winning row
   className?: string;
-  style?: React.CSSProperties;
   isSelectionScreen?: boolean;
 }
 
@@ -29,9 +28,10 @@ export function LoToCard({
   isShaking,
   highlightedRowIndex,
   className = '',
-  style = {},
   isSelectionScreen = false,
 }: LoToCardProps) {
+  console.log('🚀 ~ playable:', playable);
+  console.log('🚀 ~ selectable:', selectable);
   const room = useGameStore((state: GameState) => state.room);
   const currentPlayer = useCurPlayer();
   const currentCalledNumbers = useGameStore((state: GameState) => state.calledNumbers);
@@ -89,6 +89,7 @@ export function LoToCard({
   };
 
   const handleCellClick = async (number: number | null) => {
+    console.log('🚀 ~ handleCellClick ~ number:', number);
     // Only proceed if the game is playable, the number is valid, no winner yet, and we have player and room data
     if (playable && number && !hasWon && currentPlayer && room) {
       // Only allow marking numbers that have been called but haven't been marked already
@@ -193,7 +194,6 @@ export function LoToCard({
         'touch-manipulation',
         className
       )}
-      style={{ pointerEvents: !selectable ? 'none' : 'auto', ...style }}
     >
       <div className="flex flex-col gap-1">
         {[0, 1, 2].map((groupIndex) => (
