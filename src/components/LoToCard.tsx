@@ -11,15 +11,12 @@ import { checkHorizontalWin } from '@/utils/winDetection';
 
 interface LoToCardProps {
   card: LoToCardType;
-  isSelected?: boolean;
-  isSelectedByOther?: boolean;
   selectable?: boolean;
   playable?: boolean;
   isShaking?: boolean;
   highlightedRowIndex?: number; // New prop for highlighting a winning row
-  onClick?: () => void;
   className?: string;
-  style?: React.CSSProperties;
+  isSelectionScreen?: boolean;
 }
 
 import { Card } from '@/components/ui/card';
@@ -27,15 +24,14 @@ import { Card } from '@/components/ui/card';
 export function LoToCard({
   playable = false,
   card,
-  isSelected,
-  isSelectedByOther,
-  selectable = true,
-  onClick,
+  selectable,
   isShaking,
   highlightedRowIndex,
   className = '',
-  style = {},
+  isSelectionScreen = false,
 }: LoToCardProps) {
+  console.log('🚀 ~ playable:', playable);
+  console.log('🚀 ~ selectable:', selectable);
   const room = useGameStore((state: GameState) => state.room);
   const currentPlayer = useCurPlayer();
   const currentCalledNumbers = useGameStore((state: GameState) => state.calledNumbers);
@@ -93,6 +89,7 @@ export function LoToCard({
   };
 
   const handleCellClick = async (number: number | null) => {
+    console.log('🚀 ~ handleCellClick ~ number:', number);
     // Only proceed if the game is playable, the number is valid, no winner yet, and we have player and room data
     if (playable && number && !hasWon && currentPlayer && room) {
       // Only allow marking numbers that have been called but haven't been marked already
@@ -197,7 +194,6 @@ export function LoToCard({
         'touch-manipulation',
         className
       )}
-      style={{ pointerEvents: !selectable ? 'none' : 'auto', ...style }}
     >
       <div className="flex flex-col gap-1">
         {[0, 1, 2].map((groupIndex) => (
@@ -233,9 +229,10 @@ export function LoToCard({
                         // Base layout
                         'aspect-square flex items-center justify-center',
                         // Responsive text sizing
-                        'text-[20px]  sm:text-[14px] md:text-xl lg:text-2xl font-bold font-oswald',
+                        ' text-[20px]  sm:text-[14px] md:text-xl lg:text-2xl font-bold font-oswald',
                         // Touch friendly interactions
                         'transition-all duration-200',
+                        isSelectionScreen && 'text-[10px]',
                         playable && cell && 'active:scale-95 md:hover:scale-105',
                         // Cursor feedback for interactive cells
                         playable && cell && currentCalledNumbers.includes(cell) && 'cursor-pointer hover:opacity-80',
